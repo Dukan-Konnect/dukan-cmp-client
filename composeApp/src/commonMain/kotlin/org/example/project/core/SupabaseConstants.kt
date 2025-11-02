@@ -1,0 +1,4 @@
+package org.example.project.core
+
+const val SUPABASE_URL = "https://gmcmasoonnpvjlvohzpt.supabase.co"
+const val SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtY21hc29vbm5wdmpsdm9oenB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNjQ0ODcsImV4cCI6MjA3NTk0MDQ4N30.uGjhBgLRqc3K_YsdqlUXfVyGti7FC56INZcF2TbvzTE"
