@@ -97,7 +97,7 @@ class HomeRepositoryImpl(
         return try {
             // TODO: Replace with actual API call
             val banner = Banner(
-                id = "1",
+                id = 1,
                 title = "Let's make a package just\nfor you, Kartikey",
                 description = "Create your custom package",
                 imageUrl = "drawable/banner_woman.png",

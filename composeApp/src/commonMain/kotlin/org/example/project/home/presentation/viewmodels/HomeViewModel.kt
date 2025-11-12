@@ -91,6 +91,7 @@ class HomeViewModel(
 
     private fun loadAllData() {
         viewModelScope.launch {
+
             yield()
             setLoading(true)
             try {
@@ -137,7 +138,8 @@ class HomeViewModel(
             val result = homeRepository.getPersonalServices()
             result.onSuccess { services ->
                 _state.update { it.copy(personalServices = services) }
-                log("homeviewmodel", "personal services: ${'$'}{services.size}")
+                log("homeviewmodel", "personal services: s")
+                log("navigatu","HomeViewModel")
             }.onFailure { error ->
                 setError("Failed to load personal services: ${'$'}{error.message}")
                 log("homeviewmodel", "ee : ${'$'}{error.message}")

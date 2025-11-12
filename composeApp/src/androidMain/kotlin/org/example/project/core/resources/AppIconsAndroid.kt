@@ -119,6 +119,14 @@ actual object AppIcons {
         @Composable
         get() = loadVectorResource("ic_camera")
 
+    actual val arrowDown: ImageVector
+        @Composable
+        get() = loadVectorResource("ic_arrow_down")
+
+    actual val arrowUp: ImageVector
+        @Composable
+        get() = loadVectorResource("ic_arrow_up")
+
     @Composable
     actual fun serviceIcon(name: String): ImageVector {
         // Normalize the service icon name (remove path and extension)

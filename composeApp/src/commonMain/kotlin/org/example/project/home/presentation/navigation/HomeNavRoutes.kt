@@ -1,3 +1,6 @@
 package org.example.project.home.presentation.navigation
 
-object ServiceDetailRoute
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class ServiceDetailRoute(val serviceId: Long)

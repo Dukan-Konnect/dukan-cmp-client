@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.example.project.core.log
 import org.example.project.home.domain.model.CategoryItem
 import org.example.project.home.domain.model.ServiceDetails
 import org.example.project.home.domain.model.ServiceSection
@@ -26,9 +27,9 @@ data class ServiceDetailsUiState(
 )
 
 sealed interface ServiceDetailsEvent {
-    data class LoadService(val serviceId: Int) : ServiceDetailsEvent
-    data class CategorySelected(val categoryId: Int) : ServiceDetailsEvent
-    data class SubServiceClicked(val subServiceId: Int) : ServiceDetailsEvent
+    data class LoadService(val serviceId: Long) : ServiceDetailsEvent
+    data class CategorySelected(val categoryId: String) : ServiceDetailsEvent
+    data class SubServiceClicked(val subServiceId: String) : ServiceDetailsEvent
     data object BackClicked : ServiceDetailsEvent
     data object Retry : ServiceDetailsEvent
     data object ErrorDismissed : ServiceDetailsEvent
@@ -36,7 +37,7 @@ sealed interface ServiceDetailsEvent {
 
 sealed interface ServiceDetailsEffect {
     data object NavigateBack : ServiceDetailsEffect
-    data class NavigateToSubServiceDetails(val subServiceId: Int) : ServiceDetailsEffect
+    data class NavigateToSubServiceDetails(val subServiceId: String) : ServiceDetailsEffect
     data class ShowMessage(val message: String) : ServiceDetailsEffect
 }
 
@@ -53,7 +54,7 @@ class ServiceDetailsViewModel(
     fun onEvent(event: ServiceDetailsEvent) {
         when (event) {
             is ServiceDetailsEvent.LoadService -> loadServiceDetails(event.serviceId)
-            is ServiceDetailsEvent.CategorySelected -> filterByCategory(event.categoryId)
+            is ServiceDetailsEvent.CategorySelected -> { /* No longer needed - dropdown opening handled in UI */ }
             is ServiceDetailsEvent.SubServiceClicked -> viewModelScope.launch {
                 _effect.emit(ServiceDetailsEffect.NavigateToSubServiceDetails(event.subServiceId))
             }
@@ -78,7 +79,7 @@ class ServiceDetailsViewModel(
 
     private fun clearError() = setError(null)
 
-    private fun loadServiceDetails(serviceId: Int) {
+    private fun loadServiceDetails(serviceId: Long) {
         viewModelScope.launch {
             setLoading(true)
             try {
@@ -91,27 +92,30 @@ class ServiceDetailsViewModel(
                             selectedCategory = null
                         )
                     }
+                    log("servicedetails", "det$details")
                 }.onFailure { error ->
                     setError("Failed to load service details: ${error.message}")
+                    log("servicedetails", error.message.toString())
                 }
             } catch (e: Exception) {
                 setError("Error loading service details: ${e.message}")
+                log("servicedetails", e.message.toString())
             } finally {
                 setLoading(false)
             }
         }
     }
 
-    private fun filterByCategory(categoryId: Int) {
+    private fun filterByCategory(categoryId: String) {
         val currentDetails = _state.value.serviceDetails ?: return
         val selectedCategory = currentDetails.categories.find { it.id == categoryId }
 
-        // For now, just set the selected category
-        // Later you can implement actual filtering logic based on category
+        val filteredSections = currentDetails.sections.filter { it.id == categoryId }
+
         _state.update {
             it.copy(
                 selectedCategory = selectedCategory,
-                filteredSections = currentDetails.sections // TODO: Implement filtering logic
+                filteredSections = filteredSections.ifEmpty { currentDetails.sections }
             )
         }
     }

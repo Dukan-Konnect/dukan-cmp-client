@@ -88,6 +88,12 @@ expect object AppIcons {
     val camera: ImageVector
         @Composable get
 
+    val arrowDown: ImageVector
+        @Composable get
+
+    val arrowUp: ImageVector
+        @Composable get
+
     /**
      * Convert a service-provided icon string (e.g. "ic_salon_women.xml") to a platform ImageVector.
      */

@@ -12,7 +12,7 @@ import org.koin.dsl.module
 val homeModule = module {
 
     single<HomeRepository> { HomeRepositoryImpl(get()) } // Repository
-    single<ServiceDetailsRepository> { ServiceDetailsRepositoryImpl() } // Service Details Repository
+    single<ServiceDetailsRepository> { ServiceDetailsRepositoryImpl(get()) } // Service Details Repository
 
     // ViewModels
     viewModel { HomeViewModel(get()) }

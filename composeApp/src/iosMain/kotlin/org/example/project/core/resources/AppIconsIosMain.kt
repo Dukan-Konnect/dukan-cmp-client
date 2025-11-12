@@ -118,6 +118,14 @@ actual object AppIcons {
         @Composable
         get() = Icons.Default.CameraAlt
 
+    actual val arrowDown: ImageVector
+        @Composable
+        get() = Icons.Default.KeyboardArrowDown
+
+    actual val arrowUp: ImageVector
+        @Composable
+        get() = Icons.Default.KeyboardArrowUp
+
     @Composable
     actual fun serviceIcon(name: String): ImageVector {
         return when {

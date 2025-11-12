@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import org.example.project.core.log
 import org.example.project.home.domain.model.Banner
 import org.example.project.home.domain.model.Service
 import org.example.project.home.domain.model.ServiceCategory
@@ -39,7 +40,6 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
-@Suppress("UNUSED_PARAMETER")
 @Composable
 fun HomeScreen(
     onProfileClick: () -> Unit = {},
@@ -47,14 +47,19 @@ fun HomeScreen(
     onServiceClick: (Int) -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
+
     val uiState by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Collect one-off effects
     LaunchedEffect(viewModel) {
+        log("navigatu","LaunchedEffect: HomeViewModel")
         viewModel.effect.collect { effect ->
             when (effect) {
-                is HomeEffect.NavigateToService -> onServiceClick(effect.id)
+                is HomeEffect.NavigateToService -> {
+                    onServiceClick(effect.id)
+                    log("servicedetails","id = ${effect.id}")
+                }
                 HomeEffect.OpenLocationPicker -> { /* TODO open picker */ }
                 HomeEffect.OpenBanner -> { /* TODO open banner destination */ }
                 is HomeEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
@@ -367,7 +372,7 @@ fun HomeScreenPreview() {
     val previewState = HomeUiState(
         isLoading = false,
         userLocation = UserLocation("Kavuri Hills, Madhapur"),
-        banner = Banner("Salon for women", "Let’s make a package just for you, Manvi!", "","",""),
+        banner = Banner(1, "Let’s make a package just for you, Manvi!", "","",""),
         personalServices = dummyServices,
         homeServices = dummyServices.take(4),
         trendingServices = dummyServices.shuffled(),
