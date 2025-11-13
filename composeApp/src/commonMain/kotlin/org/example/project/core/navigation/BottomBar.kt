@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.example.project.core.resources.AppIcons
 
 @Composable
 fun BottomBar(
@@ -40,10 +41,11 @@ fun BottomBar(
     }
 }
 
+@Composable
 private fun getIconForItem(item: BottomNavItem): ImageVector {
     return when (item) {
-        is BottomNavItem.Home -> PlatformIcons.Home
-        is BottomNavItem.Bookings -> PlatformIcons.Bookings
-        is BottomNavItem.Profile -> PlatformIcons.Profile
+        is BottomNavItem.Home -> AppIcons.home
+        is BottomNavItem.Bookings -> AppIcons.bookmark
+        is BottomNavItem.Profile -> AppIcons.personLarge
     }
 }

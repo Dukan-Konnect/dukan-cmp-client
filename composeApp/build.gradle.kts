@@ -6,7 +6,10 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     kotlin("plugin.serialization") version "2.2.20"
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
 }
+
 
 kotlin {
     androidTarget {
@@ -14,7 +17,9 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
             freeCompilerArgs.add("-Xexpect-actual-classes")
         }
+
     }
+
     iosArm64 {
         compilerOptions {
             freeCompilerArgs.add("-Xexpect-actual-classes")
@@ -42,17 +47,14 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.core.splashscreen)
 
-            // Koin Android (platform-specific) - added
-            //implementation(libs.koin.android)
-
             implementation(libs.coil.network.okhttp)
 
-
-             // OkHttp (network client used by the fetcher)
-             implementation(libs.okhttp)
+            // OkHttp (network client used by the fetcher)
+            implementation(libs.okhttp)
 
             // Ktor OkHttp engine for Android (needed by supabase-kt / Ktor client)
             implementation(libs.ktor.client.okhttp)
+            implementation(libs.androidx.room.sqlite.wrapper)
         }
         iosMain.dependencies {
             // Ktor Darwin engine for iOS
@@ -87,6 +89,8 @@ kotlin {
             // Pick one based on your Ktor version:
             // For Ktor 3.x:
             implementation(libs.coil.network.ktor3)
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.sqlite.bundled)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -105,6 +109,13 @@ android {
         versionCode = 1
         versionName = "1.0"
     }
+
+
+    // Simple Room schema configuration
+    // The Room Gradle plugin requires a schema location; specify it here.
+    // If you prefer KSP args instead, we can switch, but this uses the Gradle DSL.
+
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -123,4 +134,15 @@ android {
 
 dependencies {
     debugImplementation(compose.uiTooling)
+
+        // Room
+        add("kspAndroid", libs.androidx.room.compiler)
+//        add("kspIosSimulatorArm64", libs.androidx.room.compiler)
+//        add("kspIosX64", libs.androidx.room.compiler)
+//        add("kspIosArm64", libs.androidx.room.compiler)
+
 }
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
