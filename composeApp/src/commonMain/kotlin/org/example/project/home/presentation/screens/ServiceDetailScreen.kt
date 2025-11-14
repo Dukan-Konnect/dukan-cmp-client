@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
@@ -37,6 +38,7 @@ fun ServiceDetailScreen(
     serviceId: Long = 1L,
     onBackClick: () -> Unit = {},
     onSubServiceClick: (String) -> Unit = {},
+    onNavigateToSummary: () -> Unit = {},
     viewModel: ServiceDetailsViewModel = koinViewModel()
 ) {
     val uiState by viewModel.state.collectAsState()
@@ -53,6 +55,7 @@ fun ServiceDetailScreen(
             when (effect) {
                 ServiceDetailsEffect.NavigateBack -> onBackClick()
                 is ServiceDetailsEffect.NavigateToSubServiceDetails -> onSubServiceClick(effect.subServiceId)
+                ServiceDetailsEffect.NavigateToSummary -> onNavigateToSummary()
                 is ServiceDetailsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
             }
         }
@@ -328,11 +331,56 @@ fun ServiceDetailsScreenContent(
                         onExpandChange = { expandedSections[section.id] = it }
                     ) {
                         section.items.forEach { subService ->
+                            val q = uiState.screenCartItems[subService.id] ?: 0
                             SubServiceItem(
                                 subService = subService,
+                                quantity = q,
+                                onIncrease = { intent(ServiceDetailsEvent.UpdateItemQuantity(subService.id, q + 1)) },
+                                onDecrease = { intent(ServiceDetailsEvent.UpdateItemQuantity(subService.id, (q - 1).coerceAtLeast(0))) },
                                 onClick = { intent(ServiceDetailsEvent.SubServiceClicked(subService.id)) }
                             )
                         }
+                    }
+                }
+            }
+        }
+
+        // Bottom Cart Bar (visible when quantity > 0)
+        if (uiState.screenCartTotalQuantity > 0) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+                color = Color.White,
+                shadowElevation = 8.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "₹ ${uiState.screenCartTotalCents / 100}",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Black
+                        )
+                        Text(
+                            text = "${uiState.screenCartTotalQuantity} Item${if (uiState.screenCartTotalQuantity == 1) "" else "s"}",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+                    Button(
+                        onClick = { intent(ServiceDetailsEvent.ViewCartClicked) },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF)),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
+                    ) {
+                        Text("Add to Cart", color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -343,7 +391,7 @@ fun ServiceDetailsScreenContent(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp)
+                .padding(bottom = if (uiState.screenCartTotalQuantity > 0) 72.dp else 16.dp)
         )
     }
 }
@@ -386,7 +434,7 @@ fun CategoryItem(
             category.label,
             fontSize = 11.sp,
             color = Color.Black,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            textAlign = TextAlign.Center,
             maxLines = 2,
             lineHeight = 14.sp,
             fontWeight = FontWeight.Normal
@@ -446,10 +494,11 @@ fun ExpandableServiceSection(
 @Composable
 fun SubServiceItem(
     subService: SubService,
+    quantity: Int,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit,
     onClick: () -> Unit
 ) {
-    var quantity by remember { mutableStateOf(0) }
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -490,28 +539,8 @@ fun SubServiceItem(
                 fontSize = 15.sp,
                 color = Color.Black
             )
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = AppIcons.star,
-                    contentDescription = "Rating",
-                    tint = Color(0xFFFFA000),
-                    modifier = Modifier.size(12.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    subService.ratingText,
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-            }
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                "₹ ${subService.price}",
-                color = Color.Black,
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
-            )
+            Text("₹ ${subService.price}", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
         if (quantity > 0) {
             Row(
@@ -521,45 +550,19 @@ fun SubServiceItem(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    "-",
-                    fontSize = 18.sp,
-                    color = Color(0xFF6C4DFF),
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { quantity = (quantity - 1).coerceAtLeast(0) }
-                )
-                Text(
-                    quantity.toString(),
-                    fontSize = 14.sp,
-                    color = Color(0xFF6C4DFF),
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    "+",
-                    fontSize = 18.sp,
-                    color = Color(0xFF6C4DFF),
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { quantity++ }
-                )
+                Text("-", fontSize = 18.sp, color = Color(0xFF6C4DFF), fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onDecrease() })
+                Text(quantity.toString(), fontSize = 14.sp, color = Color(0xFF6C4DFF), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                Text("+", fontSize = 18.sp, color = Color(0xFF6C4DFF), fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onIncrease() })
             }
         } else {
             Button(
-                onClick = { quantity = 1 },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFF6C4DFF)
-                ),
+                onClick = onIncrease,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color(0xFF6C4DFF)),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6C4DFF)),
                 shape = RoundedCornerShape(6.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                 modifier = Modifier.height(32.dp)
-            ) {
-                Text(
-                    "Add",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
+            ) { Text("Add", fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
         }
     }
 }

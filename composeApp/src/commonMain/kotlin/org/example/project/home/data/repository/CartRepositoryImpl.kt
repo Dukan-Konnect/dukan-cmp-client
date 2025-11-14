@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import org.example.project.home.data.local.dao.CartDao
+import org.example.project.home.data.local.entities.CartItemEntity
 import org.example.project.home.data.local.mappers.toDomainModel
 import org.example.project.home.data.local.mappers.toDomainModels
 import org.example.project.home.data.local.mappers.toEntity
@@ -18,188 +19,73 @@ class CartRepositoryImpl(
     private val cartDao: CartDao
 ) : CartRepository {
 
-    override fun observeCartItems(): Flow<List<CartItem>> {
-        return cartDao.observeCartItems().map { entities ->
-            entities.toDomainModels()
-        }
+    override fun observeCartItems(): Flow<List<CartItem>> =
+        cartDao.observeCartItems().map { it.toDomainModels() }
+
+    override fun observeCartSummary(): Flow<CartSummary?> =
+        cartDao.observeCartSummary().map { it?.toDomainModel() }
+
+    override fun observeCartTotals() = combine(observeCartItems(), observeCartSummary()) { items, summary ->
+        if (summary != null) CartSummary.calculateTotals(items, summary) else null
     }
 
-    override fun observeCartSummary(): Flow<CartSummary?> {
-        return cartDao.observeCartSummary().map { entity ->
-            entity?.toDomainModel()
-        }
+    override fun observeCartData() = combine(observeCartItems(), observeCartSummary(), observeCartTotals()) { items, summary, totals ->
+        CartData(items, summary, totals)
     }
 
-    override fun observeCartTotals(): Flow<CartTotals?> {
-        return combine(
-            observeCartItems(),
-            observeCartSummary()
-        ) { items, summary ->
-            if (summary != null) {
-                CartSummary.calculateTotals(items, summary)
-            } else null
-        }
-    }
-
-    override fun observeCartData(): Flow<CartData> {
-        return combine(
-            observeCartItems(),
-            observeCartSummary(),
-            observeCartTotals()
-        ) { items, summary, totals ->
-            CartData(
-                items = items,
-                summary = summary,
-                totals = totals
+    override suspend fun upsertItem(item: CartItem): Result<Unit> = runCatching {
+        val now = getCurrentTimeMillis()
+        cartDao.upsertItem(
+            CartItemEntity(
+                productId = item.productId,
+                name = item.name,
+                priceCents = item.priceCents,
+                quantity = item.quantity,
+                imageUrl = item.imageUrl,
+                createdAt = now,
+                updatedAt = now
             )
+        )
+    }
+
+    override suspend fun addItem(item: CartItem): Result<Unit> = runCatching {
+        val existing = cartDao.getCartItem(item.productId)
+        if (existing != null) {
+            cartDao.updateItemQuantity(item.productId, existing.quantity + item.quantity, getCurrentTimeMillis())
+        } else {
+            cartDao.insertOrUpdateItem(item.toEntity())
         }
     }
 
-    override suspend fun addItem(item: CartItem): Result<Unit> {
-        return try {
-            val existingItem = cartDao.getCartItem(item.productId)
-            if (existingItem != null) {
-                // Update existing item quantity
-                val newQuantity = existingItem.quantity + item.quantity
-                cartDao.updateItemQuantity(item.productId, newQuantity, getCurrentTimeMillis())
-            } else {
-                // Insert new item
-                cartDao.insertOrUpdateItem(item.toEntity())
-            }
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun updateItemQuantity(productId: Long, quantity: Int): Result<Unit> {
-        return try {
-            if (quantity <= 0) {
-                cartDao.deleteItem(productId)
-            } else {
-                val existingItem = cartDao.getCartItem(productId)
-                if (existingItem != null) {
-                    cartDao.updateItemQuantity(productId, quantity, getCurrentTimeMillis())
-                }
-            }
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun removeItem(productId: Long): Result<Unit> {
-        return try {
+    override suspend fun updateItemQuantity(productId: String, quantity: Int): Result<Unit> = runCatching {
+        if (quantity <= 0) {
             cartDao.deleteItem(productId)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
+        } else {
+            val existing = cartDao.getCartItem(productId)
+            requireNotNull(existing) { "Item not found for update. Use upsertItem instead." }
+            cartDao.updateItemQuantity(productId, quantity, getCurrentTimeMillis())
         }
     }
 
-    override suspend fun clearAllItems(): Result<Unit> {
-        return try {
-            cartDao.clearAllItems()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    override suspend fun removeItem(productId: String): Result<Unit> = runCatching {
+        cartDao.deleteItem(productId)
     }
 
-    override suspend fun getCartItems(): Result<List<CartItem>> {
-        return try {
-            val items = cartDao.getCartItems().toDomainModels()
-            Result.success(items)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    override suspend fun clearAllItems(): Result<Unit> = runCatching { cartDao.clearAllItems() }
 
-    override suspend fun updatePhoneNumber(phoneNumber: String): Result<Unit> {
-        return try {
-            cartDao.updatePhoneNumber(phoneNumber, getCurrentTimeMillis())
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    override suspend fun getCartItems() = runCatching { cartDao.getCartItems().toDomainModels() }
 
-    override suspend fun updateAddress(address: String?): Result<Unit> {
-        return try {
-            cartDao.updateAddress(address, getCurrentTimeMillis())
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    override suspend fun updatePhoneNumber(phoneNumber: String) = runCatching { cartDao.updatePhoneNumber(phoneNumber, getCurrentTimeMillis()) }
+    override suspend fun updateAddress(address: String?) = runCatching { cartDao.updateAddress(address, getCurrentTimeMillis()) }
+    override suspend fun updateTimeSlot(timeSlot: String?) = runCatching { cartDao.updateTimeSlot(timeSlot, getCurrentTimeMillis()) }
+    override suspend fun updateTaxPercent(taxPercent: Double) = runCatching { cartDao.updateTaxPercent(taxPercent, getCurrentTimeMillis()) }
+    override suspend fun updateDeliveryCharges(deliveryChargesCents: Long) = runCatching { cartDao.updateDeliveryCharges(deliveryChargesCents, getCurrentTimeMillis()) }
+    override suspend fun getCartSummary() = runCatching { cartDao.getCartSummary()?.toDomainModel() }
+    override suspend fun calculateTotals() = runCatching {
+        val items = cartDao.getCartItems().toDomainModels()
+        val summary = cartDao.getCartSummary()?.toDomainModel() ?: error("Cart summary not initialized")
+        CartSummary.calculateTotals(items, summary)
     }
-
-    override suspend fun updateTimeSlot(timeSlot: String?): Result<Unit> {
-        return try {
-            cartDao.updateTimeSlot(timeSlot, getCurrentTimeMillis())
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun updateTaxPercent(taxPercent: Double): Result<Unit> {
-        return try {
-            cartDao.updateTaxPercent(taxPercent, getCurrentTimeMillis())
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun updateDeliveryCharges(deliveryChargesCents: Long): Result<Unit> {
-        return try {
-            cartDao.updateDeliveryCharges(deliveryChargesCents, getCurrentTimeMillis())
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun getCartSummary(): Result<CartSummary?> {
-        return try {
-            val summary = cartDao.getCartSummary()?.toDomainModel()
-            Result.success(summary)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun calculateTotals(): Result<CartTotals> {
-        return try {
-            val items = cartDao.getCartItems().toDomainModels()
-            val summary = cartDao.getCartSummary()?.toDomainModel()
-
-            if (summary != null) {
-                val totals = CartSummary.calculateTotals(items, summary)
-                Result.success(totals)
-            } else {
-                Result.failure(Exception("Cart summary not initialized"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun initializeCart(phoneNumber: String): Result<Unit> {
-        return try {
-            cartDao.initializeCart(phoneNumber)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun clearCart(): Result<Unit> {
-        return try {
-            cartDao.clearCart()
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+    override suspend fun initializeCart(phoneNumber: String) = runCatching { cartDao.initializeCart(phoneNumber) }
+    override suspend fun clearCart() = runCatching { cartDao.clearCart() }
 }

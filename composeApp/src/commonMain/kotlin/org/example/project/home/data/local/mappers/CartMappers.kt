@@ -20,19 +20,15 @@ fun CartItem.toEntity(): CartItemEntity {
     )
 }
 
-fun CartItemEntity.toDomainModel(): CartItem {
-    return CartItem(
-        productId = productId,
-        name = name,
-        priceCents = priceCents,
-        quantity = quantity,
-        imageUrl = imageUrl
-    )
-}
+fun CartItemEntity.toDomainModel(): CartItem = CartItem(
+    productId = productId,
+    name = name,
+    priceCents = priceCents,
+    quantity = quantity,
+    imageUrl = imageUrl
+)
 
-fun List<CartItemEntity>.toDomainModels(): List<CartItem> {
-    return map { it.toDomainModel() }
-}
+fun List<CartItemEntity>.toDomainModels(): List<CartItem> = map { it.toDomainModel() }
 
 // CartSummary mappers
 fun CartSummary.toEntity(): CartSummaryEntity {
@@ -48,12 +44,10 @@ fun CartSummary.toEntity(): CartSummaryEntity {
     )
 }
 
-fun CartSummaryEntity.toDomainModel(): CartSummary {
-    return CartSummary(
-        phoneNumber = phoneNumber,
-        address = address,
-        timeSlot = timeSlot,
-        taxPercent = taxPercent,
-        deliveryChargesCents = deliveryChargesCents
-    )
-}
+fun CartSummaryEntity.toDomainModel(): CartSummary = CartSummary(
+    phoneNumber = phoneNumber,
+    address = address,
+    timeSlot = timeSlot,
+    taxPercent = taxPercent,
+    deliveryChargesCents = deliveryChargesCents
+)

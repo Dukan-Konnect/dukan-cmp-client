@@ -17,16 +17,22 @@ interface CartDao {
     suspend fun getCartItems(): List<CartItemEntity>
 
     @Query("SELECT * FROM cart_items WHERE product_id = :productId")
-    suspend fun getCartItem(productId: Long): CartItemEntity?
+    suspend fun getCartItem(productId: String): CartItemEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateItem(item: CartItemEntity)
 
+    @Upsert
+    suspend fun upsertItem(item: CartItemEntity)
+
+    @Upsert
+    suspend fun upsertItems(items: List<CartItemEntity>)
+
     @Query("UPDATE cart_items SET quantity = :quantity, updated_at = :updatedAt WHERE product_id = :productId")
-    suspend fun updateItemQuantity(productId: Long, quantity: Int, updatedAt: Long)
+    suspend fun updateItemQuantity(productId: String, quantity: Int, updatedAt: Long)
 
     @Query("DELETE FROM cart_items WHERE product_id = :productId")
-    suspend fun deleteItem(productId: Long)
+    suspend fun deleteItem(productId: String)
 
     @Query("DELETE FROM cart_items")
     suspend fun clearAllItems()

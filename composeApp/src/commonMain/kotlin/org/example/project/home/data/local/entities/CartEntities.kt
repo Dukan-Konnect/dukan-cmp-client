@@ -8,7 +8,7 @@ import androidx.room.ColumnInfo
 data class CartItemEntity(
     @PrimaryKey
     @ColumnInfo(name = "product_id")
-    val productId: Long,
+    val productId: String,
 
     @ColumnInfo(name = "name")
     val name: String,

@@ -21,8 +21,8 @@ data class SummaryUiState(
 )
 
 sealed interface SummaryEvent {
-    data class UpdateItemQuantity(val productId: Long, val quantity: Int) : SummaryEvent
-    data class RemoveItem(val productId: Long) : SummaryEvent
+    data class UpdateItemQuantity(val productId: String, val quantity: Int) : SummaryEvent
+    data class RemoveItem(val productId: String) : SummaryEvent
     data class UpdatePhoneNumber(val phoneNumber: String) : SummaryEvent
     data class UpdateAddress(val address: String?) : SummaryEvent
     data class UpdateTimeSlot(val timeSlot: String?) : SummaryEvent
@@ -92,7 +92,7 @@ class SummaryViewModel(
         }
     }
 
-    private fun updateItemQuantity(productId: Long, quantity: Int) {
+    private fun updateItemQuantity(productId: String, quantity: Int) {
         viewModelScope.launch {
             setLoading(true)
             cartUseCases.updateItemQuantity(productId, quantity)
@@ -106,7 +106,7 @@ class SummaryViewModel(
         }
     }
 
-    private fun removeItem(productId: Long) {
+    private fun removeItem(productId: String) {
         viewModelScope.launch {
             setLoading(true)
             cartUseCases.removeItemFromCart(productId)
@@ -214,13 +214,13 @@ class SummaryViewModel(
     }
 
     // Convenience methods for UI
-    fun incrementQuantity(productId: Long) {
+    fun incrementQuantity(productId: String) {
         viewModelScope.launch {
             cartUseCases.incrementItemQuantity(productId)
         }
     }
 
-    fun decrementQuantity(productId: Long) {
+    fun decrementQuantity(productId: String) {
         viewModelScope.launch {
             cartUseCases.decrementItemQuantity(productId)
         }

@@ -14,9 +14,10 @@ interface CartRepository {
     fun observeCartData(): Flow<CartData>
 
     // Item management
+    suspend fun upsertItem(item: CartItem): Result<Unit>
     suspend fun addItem(item: CartItem): Result<Unit>
-    suspend fun updateItemQuantity(productId: Long, quantity: Int): Result<Unit>
-    suspend fun removeItem(productId: Long): Result<Unit>
+    suspend fun updateItemQuantity(productId: String, quantity: Int): Result<Unit>
+    suspend fun removeItem(productId: String): Result<Unit>
     suspend fun clearAllItems(): Result<Unit>
     suspend fun getCartItems(): Result<List<CartItem>>
 

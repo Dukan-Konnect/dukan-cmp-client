@@ -117,45 +117,29 @@ class ServiceDetailsViewModel(
 
             // Update local per-screen map
             val newMap = current.screenCartItems.toMutableMap()
-            val previous = newMap[subServiceId] ?: 0
             if (quantity > 0) newMap[subServiceId] = quantity else newMap.remove(subServiceId)
 
             // Recompute totals for this screen only
             val (totalCents, totalQty) = computeScreenTotals(details, newMap)
             _state.update { it.copy(screenCartItems = newMap, screenCartTotalCents = totalCents, screenCartTotalQuantity = totalQty) }
 
-            // Sync with global cart (Room)
-            // Convert subServiceId (String) -> Long if possible
-            val productId = subServiceId.toLongOrNull()
-            if (productId == null) {
-                _effect.emit(ServiceDetailsEffect.ShowMessage("Cannot add item: invalid item id"))
-                return@launch
-            }
             val sub = findSub(details, subServiceId) ?: run {
                 _effect.emit(ServiceDetailsEffect.ShowMessage("Item not found"))
                 return@launch
             }
 
-            when {
-                quantity <= 0 -> {
-                    cartRepository.removeItem(productId)
-                }
-                previous == 0 -> {
-                    // First time add from this screen -> ensure row exists
-                    cartRepository.addItem(
-                        CartItem(
-                            productId = productId,
-                            name = sub.title,
-                            priceCents = sub.price.toLong() * 100,
-                            quantity = quantity,
-                            imageUrl = sub.image
-                        )
+            if (quantity <= 0) {
+                cartRepository.removeItem(subServiceId)
+            } else {
+                cartRepository.upsertItem(
+                    CartItem(
+                        productId = subServiceId,
+                        name = sub.title,
+                        priceCents = sub.price.toLong() * 100,
+                        quantity = quantity,
+                        imageUrl = sub.image
                     )
-                }
-                else -> {
-                    // Update to exact quantity
-                    cartRepository.updateItemQuantity(productId, quantity)
-                }
+                )
             }
         }
     }

@@ -10,7 +10,6 @@ import org.example.project.home.domain.repository.CartRepository
 class CartUseCases(
     private val cartRepository: CartRepository
 ) {
-
     // Observables for reactive UI
     fun observeCartData(): Flow<CartData> = cartRepository.observeCartData()
     fun observeCartItems(): Flow<List<CartItem>> = cartRepository.observeCartItems()
@@ -22,11 +21,11 @@ class CartUseCases(
         return cartRepository.addItem(item)
     }
 
-    suspend fun updateItemQuantity(productId: Long, quantity: Int): Result<Unit> {
+    suspend fun updateItemQuantity(productId: String, quantity: Int): Result<Unit> {
         return cartRepository.updateItemQuantity(productId, quantity)
     }
 
-    suspend fun removeItemFromCart(productId: Long): Result<Unit> {
+    suspend fun removeItemFromCart(productId: String): Result<Unit> {
         return cartRepository.removeItem(productId)
     }
 
@@ -64,13 +63,8 @@ class CartUseCases(
         return cartRepository.clearCart()
     }
 
-    // Calculations
-    suspend fun calculateCartTotals(): Result<CartTotals> {
-        return cartRepository.calculateTotals()
-    }
-
     // Convenience methods
-    suspend fun addOrUpdateItem(productId: Long, name: String, priceCents: Long, imageUrl: String? = null): Result<Unit> {
+    suspend fun addOrUpdateItem(productId: String, name: String, priceCents: Long, imageUrl: String? = null): Result<Unit> {
         val item = CartItem(
             productId = productId,
             name = name,
@@ -81,7 +75,7 @@ class CartUseCases(
         return addItemToCart(item)
     }
 
-    suspend fun incrementItemQuantity(productId: Long): Result<Unit> {
+    suspend fun incrementItemQuantity(productId: String): Result<Unit> {
         val items = cartRepository.getCartItems()
         return items.fold(
             onSuccess = { cartItems ->
@@ -96,7 +90,7 @@ class CartUseCases(
         )
     }
 
-    suspend fun decrementItemQuantity(productId: Long): Result<Unit> {
+    suspend fun decrementItemQuantity(productId: String): Result<Unit> {
         val items = cartRepository.getCartItems()
         return items.fold(
             onSuccess = { cartItems ->

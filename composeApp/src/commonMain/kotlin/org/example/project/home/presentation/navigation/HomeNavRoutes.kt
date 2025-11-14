@@ -4,3 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ServiceDetailRoute(val serviceId: Long)
+
+@Serializable
+object SummaryRoute
