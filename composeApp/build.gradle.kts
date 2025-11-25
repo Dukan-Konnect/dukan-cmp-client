@@ -55,6 +55,7 @@ kotlin {
             // Ktor OkHttp engine for Android (needed by supabase-kt / Ktor client)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.androidx.room.sqlite.wrapper)
+            implementation(libs.checkout)
         }
         iosMain.dependencies {
             // Ktor Darwin engine for iOS
@@ -83,6 +84,7 @@ kotlin {
             // Ktor 3.x core dependencies for supabase-kt
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.multiplatform.settings.no.arg)
             implementation(libs.coil3.coil.compose)

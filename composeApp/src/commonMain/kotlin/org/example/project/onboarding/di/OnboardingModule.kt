@@ -5,6 +5,8 @@ import org.example.project.onboarding.data.repository.AuthRepositoryImpl
 import org.example.project.onboarding.domain.repository.AuthRepository
 import org.example.project.onboarding.domain.usecase.VerifyOtpUseCase
 import org.example.project.onboarding.presentation.viewmodel.AuthViewModel
+import org.example.project.onboarding.presentation.viewmodel.LocationFetchViewModel
+import org.example.project.onboarding.presentation.viewmodel.NameCaptureViewModel
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
@@ -21,5 +23,7 @@ val onboardingModule = module {
 
     // ViewModels with dependencies
     viewModelOf(::AuthViewModel)
+    viewModelOf(::LocationFetchViewModel)
+    viewModelOf(::NameCaptureViewModel)
 
 }

@@ -29,6 +29,10 @@ interface CartRepository {
     suspend fun updateDeliveryCharges(deliveryChargesCents: Long): Result<Unit>
     suspend fun getCartSummary(): Result<CartSummary?>
 
+    // User management
+    suspend fun updateUserName(name: String?): Result<Unit>
+    suspend fun updateUserLocation(address: String): Result<Unit>
+
     // Totals calculation
     suspend fun calculateTotals(): Result<CartTotals>
 

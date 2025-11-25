@@ -1,15 +1,13 @@
-package org.example.project.home.data
+package org.example.project.home.data.repository
 
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.from
+import org.example.project.core.log
 import org.example.project.home.domain.model.Banner
 import org.example.project.home.domain.model.Service
 import org.example.project.home.domain.model.ServiceCategory
 import org.example.project.home.domain.model.UserLocation
 import org.example.project.home.domain.repository.HomeRepository
-import io.github.jan.supabase.SupabaseClient
-import io.github.jan.supabase.postgrest.from
-import io.github.jan.supabase.postgrest.query.Columns
-import org.example.project.core.log
-
 
 class HomeRepositoryImpl(
     private val supabase: SupabaseClient
@@ -33,10 +31,10 @@ class HomeRepositoryImpl(
                     category = ServiceCategory.PERSONAL
                 )
             }
-            log("homeviewmodel","Fetched personal Services: $serviceList")
+            log("homeviewmodel", "Fetched personal Services: $serviceList")
             Result.success(services)
         } catch (e: Exception) {
-            log("homeviewmodel","Fetched: $e")
+            log("homeviewmodel", "Fetched: $e")
             Result.failure(e)
         }
     }
@@ -59,10 +57,10 @@ class HomeRepositoryImpl(
                     category = ServiceCategory.HOME
                 )
             }
-            log("homeviewmodel","Fetched home Services: $serviceList")
+            log("homeviewmodel", "Fetched home Services: $serviceList")
             Result.success(services)
         } catch (e: Exception) {
-            log("homeviewmodel","Fetched: $e")
+            log("homeviewmodel", "Fetched: $e")
             Result.failure(e)
         }
     }
@@ -85,10 +83,10 @@ class HomeRepositoryImpl(
                     category = ServiceCategory.TRENDING
                 )
             }
-            log("homeviewmodel","Fetched tren Services: $serviceList")
+            log("homeviewmodel", "Fetched tren Services: $serviceList")
             Result.success(services)
         } catch (e: Exception) {
-            log("homeviewmodel","Fetched: $e")
+            log("homeviewmodel", "Fetched: $e")
             Result.failure(e)
         }
     }

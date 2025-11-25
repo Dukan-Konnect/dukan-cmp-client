@@ -13,6 +13,7 @@ data class CartItem(
 
 @Serializable
 data class CartSummary(
+    val name: String? = null,
     val phoneNumber: String,
     val address: String? = null,
     val timeSlot: String? = null,

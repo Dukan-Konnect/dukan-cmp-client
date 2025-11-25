@@ -34,6 +34,9 @@ data class CartSummaryEntity(
     @PrimaryKey
     val id: Int = 1, // Single row table
 
+    @ColumnInfo(name = "name")
+    val name: String? = null,
+
     @ColumnInfo(name = "phone_number")
     val phoneNumber: String,
 

@@ -9,12 +9,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.example.project.core.log
 import org.example.project.core.settings.AuthSettings
+import org.example.project.home.domain.repository.CartRepository
 import org.example.project.onboarding.domain.usecase.VerifyOtpUseCase
 
 class AuthViewModel(
     private val sendOtpUseCase: SendOtpUseCase,
     private val verifyOtpUseCase: VerifyOtpUseCase,
-    private val authSettings: AuthSettings
+    private val authSettings: AuthSettings,
+    private val cartRepository: CartRepository // injected
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -74,8 +76,12 @@ class AuthViewModel(
         viewModelScope.launch {
             verifyOtpUseCase("+91$phoneNumber", otp)
                 .onSuccess {
-                    // persist login state
                     authSettings.setLoggedIn(true)
+                    // Persist phone into cart summary. First try initialize (creates summary if empty), else fallback to update.
+                    cartRepository.initializeCart(phoneNumber).onFailure {
+                        // If already initialized, just update phone.
+                        cartRepository.updatePhoneNumber(phoneNumber)
+                    }
                     _uiState.value = _uiState.value.copy(isLoading = false, otpVerified = true)
                     onSuccess()
                 }

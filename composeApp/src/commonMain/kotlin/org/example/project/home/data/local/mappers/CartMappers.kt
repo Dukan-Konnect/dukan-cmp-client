@@ -34,6 +34,7 @@ fun List<CartItemEntity>.toDomainModels(): List<CartItem> = map { it.toDomainMod
 fun CartSummary.toEntity(): CartSummaryEntity {
     val now = getCurrentTimeMillis()
     return CartSummaryEntity(
+        name = name,
         phoneNumber = phoneNumber,
         address = address,
         timeSlot = timeSlot,
@@ -45,6 +46,7 @@ fun CartSummary.toEntity(): CartSummaryEntity {
 }
 
 fun CartSummaryEntity.toDomainModel(): CartSummary = CartSummary(
+    name = name,
     phoneNumber = phoneNumber,
     address = address,
     timeSlot = timeSlot,

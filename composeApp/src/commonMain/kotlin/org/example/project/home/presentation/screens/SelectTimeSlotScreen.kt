@@ -343,48 +343,48 @@ fun SelectTimeSlotScreen(
     }
 }
 
-@Composable
-fun DateCard(
-    date: DateOption,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(
-                if (isSelected) Color(0xFFEDE7F6)
-                else Color.White
-            )
-            .border(
-                width = 2.dp,
-                color = if (isSelected) Color(0xFF6C4DFF) else Color(0xFFE0E0E0),
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(vertical = 16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                date.day,
-                fontSize = 13.sp,
-                color = if (isSelected) Color(0xFF6C4DFF) else Color.Gray,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                date.date.toString(),
-                fontSize = 24.sp,
-                color = if (isSelected) Color(0xFF6C4DFF) else Color.Black,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
+//@Composable
+//fun DateCard(
+//    date: DateOption,
+//    isSelected: Boolean,
+//    onClick: () -> Unit,
+//    modifier: Modifier = Modifier
+//) {
+//    Box(
+//        modifier = modifier
+//            .clip(RoundedCornerShape(12.dp))
+//            .background(
+//                if (isSelected) Color(0xFFEDE7F6)
+//                else Color.White
+//            )
+//            .border(
+//                width = 2.dp,
+//                color = if (isSelected) Color(0xFF6C4DFF) else Color(0xFFE0E0E0),
+//                shape = RoundedCornerShape(12.dp)
+//            )
+//            .clickable(onClick = onClick)
+//            .padding(vertical = 16.dp),
+//        contentAlignment = Alignment.Center
+//    ) {
+//        Column(
+//            horizontalAlignment = Alignment.CenterHorizontally
+//        ) {
+//            Text(
+//                date.day,
+//                fontSize = 13.sp,
+//                color = if (isSelected) Color(0xFF6C4DFF) else Color.Gray,
+//                fontWeight = FontWeight.Medium
+//            )
+//            Spacer(modifier = Modifier.height(4.dp))
+//            Text(
+//                date.date.toString(),
+//                fontSize = 24.sp,
+//                color = if (isSelected) Color(0xFF6C4DFF) else Color.Black,
+//                fontWeight = FontWeight.Bold
+//            )
+//        }
+//    }
+//}
 
 @Composable
 fun TimeSlotCard(

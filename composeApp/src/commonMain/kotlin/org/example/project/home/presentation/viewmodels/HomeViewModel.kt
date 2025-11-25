@@ -17,11 +17,13 @@ import org.example.project.home.domain.model.Banner
 import org.example.project.home.domain.model.Service
 import org.example.project.home.domain.model.UserLocation
 import org.example.project.home.domain.repository.HomeRepository
+import org.example.project.home.domain.repository.CartRepository
 
 @Immutable
 data class HomeUiState(
     val isLoading: Boolean = false,
     val userLocation: UserLocation? = null,
+    val savedAddress: String? = null,
     val banner: Banner? = null,
     val personalServices: List<Service> = emptyList(),
     val homeServices: List<Service> = emptyList(),
@@ -48,7 +50,8 @@ sealed interface HomeEffect {
 }
 
 class HomeViewModel(
-    private val homeRepository: HomeRepository
+    private val homeRepository: HomeRepository,
+    private val cartRepository: CartRepository
 ) : ViewModel() {
 
     // Single source of truth for UI state (MVI)
@@ -97,6 +100,7 @@ class HomeViewModel(
             try {
                 // Launch sequentially to keep flow similar to previous behavior.
                 loadUserLocation()
+                loadSavedAddress()
                 loadBanner()
                 loadPersonalServices()
                 loadHomeServices()
@@ -113,10 +117,23 @@ class HomeViewModel(
             result.onSuccess { location ->
                 _state.update { it.copy(userLocation = location) }
             }.onFailure { error ->
-                setError("Failed to load location: ${'$'}{error.message}")
+                setError("Failed to load location: ${error.message}")
             }
         } catch (e: Exception) {
-            setError("Error loading location: ${'$'}{e.message}")
+            setError("Error loading location: ${e.message}")
+        }
+    }
+
+    private suspend fun loadSavedAddress() {
+        try {
+            val result = cartRepository.getCartSummary()
+            result.onSuccess { summary ->
+                _state.update { it.copy(savedAddress = summary?.address) }
+            }.onFailure { error ->
+                log("homeviewmodel", "Failed to load saved address: ${error.message}")
+            }
+        } catch (e: Exception) {
+            log("homeviewmodel", "Error loading saved address: ${e.message}")
         }
     }
 

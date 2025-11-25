@@ -109,4 +109,6 @@ class CartUseCases(
             onFailure = { Result.failure(it) }
         )
     }
+
+    suspend fun updateUserName(name: String?): Result<Unit> = cartRepository.updateUserName(name)
 }

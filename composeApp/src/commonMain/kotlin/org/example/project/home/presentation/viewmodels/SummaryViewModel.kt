@@ -26,6 +26,7 @@ sealed interface SummaryEvent {
     data class UpdatePhoneNumber(val phoneNumber: String) : SummaryEvent
     data class UpdateAddress(val address: String?) : SummaryEvent
     data class UpdateTimeSlot(val timeSlot: String?) : SummaryEvent
+    data class UpdateName(val name: String?) : SummaryEvent
     data object ClearCart : SummaryEvent
     data object ProceedToPayment : SummaryEvent
     data object BackClicked : SummaryEvent
@@ -34,12 +35,13 @@ sealed interface SummaryEvent {
 
 sealed interface SummaryEffect {
     data object NavigateBack : SummaryEffect
-    data object NavigateToPayment : SummaryEffect
+    data class NavigateToPayment(val orderId: String, val amount: Long) : SummaryEffect
     data class ShowMessage(val message: String) : SummaryEffect
 }
 
 class SummaryViewModel(
-    private val cartUseCases: CartUseCases
+    private val cartUseCases: CartUseCases,
+    private val createPaymentOrder: org.example.project.home.domain.usecase.CreatePaymentOrderUseCase
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SummaryUiState())
@@ -85,6 +87,7 @@ class SummaryViewModel(
             is SummaryEvent.UpdatePhoneNumber -> updatePhoneNumber(event.phoneNumber)
             is SummaryEvent.UpdateAddress -> updateAddress(event.address)
             is SummaryEvent.UpdateTimeSlot -> updateTimeSlot(event.timeSlot)
+            is SummaryEvent.UpdateName -> updateName(event.name)
             SummaryEvent.ClearCart -> clearCart()
             SummaryEvent.ProceedToPayment -> proceedToPayment()
             SummaryEvent.BackClicked -> navigateBack()
@@ -156,6 +159,18 @@ class SummaryViewModel(
         }
     }
 
+    private fun updateName(name: String?) {
+        viewModelScope.launch {
+            cartUseCases.updateUserName(name)
+                .onSuccess {
+                    _effect.emit(SummaryEffect.ShowMessage("Name updated"))
+                }
+                .onFailure { error ->
+                    setError("Failed to update name: ${error.message}")
+                }
+        }
+    }
+
     private fun clearCart() {
         viewModelScope.launch {
             setLoading(true)
@@ -174,6 +189,7 @@ class SummaryViewModel(
         viewModelScope.launch {
             val summary = _state.value.cartSummary
             val items = _state.value.cartItems
+            val totals = _state.value.cartTotals
 
             when {
                 items.isEmpty() -> {
@@ -189,7 +205,19 @@ class SummaryViewModel(
                     _effect.emit(SummaryEffect.ShowMessage("Please select time slot"))
                 }
                 else -> {
-                    _effect.emit(SummaryEffect.NavigateToPayment)
+                    // Create Razorpay order
+                    setLoading(true)
+                    val amountToPay = totals?.amountToPayCents ?: 0
+
+                    createPaymentOrder(amountToPay)
+                        .onSuccess { paymentOrder ->
+                            setLoading(false)
+                            _effect.emit(SummaryEffect.NavigateToPayment(paymentOrder.orderId, paymentOrder.amount))
+                        }
+                        .onFailure { error ->
+                            setLoading(false)
+                            _effect.emit(SummaryEffect.ShowMessage("Failed to create payment order: ${error.message}"))
+                        }
                 }
             }
         }

@@ -7,3 +7,9 @@ object LoginRoute
 
 @Serializable
 data class OtpRoute(val phoneNumber: String)
+
+@Serializable
+object LocationFetchRoute
+
+@Serializable
+data class NameCaptureRoute(val phoneNumber: String)

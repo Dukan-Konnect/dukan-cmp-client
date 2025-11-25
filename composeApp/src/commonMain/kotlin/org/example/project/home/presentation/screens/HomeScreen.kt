@@ -39,6 +39,7 @@ import org.example.project.core.resources.AppIcons
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
+import org.example.project.home.utils.AddressFormatter
 
 @Composable
 fun HomeScreen(
@@ -148,7 +149,7 @@ fun HomeScreenContent(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            uiState.userLocation?.address ?: "Select location",
+                            AddressFormatter.formatShortAddress(uiState.savedAddress ?: uiState.userLocation?.address),
                             fontSize = 14.sp,
                             color = Color.Black,
                             fontWeight = FontWeight.Medium,

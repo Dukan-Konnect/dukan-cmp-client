@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import org.example.project.home.data.local.dao.CartDao
 import org.example.project.home.data.local.entities.CartItemEntity
+import org.example.project.home.data.local.entities.CartSummaryEntity
 import org.example.project.home.data.local.mappers.toDomainModel
 import org.example.project.home.data.local.mappers.toDomainModels
 import org.example.project.home.data.local.mappers.toEntity
@@ -88,4 +89,29 @@ class CartRepositoryImpl(
     }
     override suspend fun initializeCart(phoneNumber: String) = runCatching { cartDao.initializeCart(phoneNumber) }
     override suspend fun clearCart() = runCatching { cartDao.clearCart() }
+
+    override suspend fun updateUserName(name: String?): Result<Unit> = runCatching {
+        val existing = cartDao.getCartSummary()
+        val now = getCurrentTimeMillis()
+        if (existing == null) {
+            cartDao.insertOrUpdateSummary(
+                CartSummaryEntity(
+                    name = name,
+                    phoneNumber = "", // will be filled later
+                    address = null,
+                    timeSlot = null,
+                    taxPercent = 0.0,
+                    deliveryChargesCents = 0L,
+                    createdAt = now,
+                    updatedAt = now
+                )
+            )
+        } else {
+            cartDao.insertOrUpdateSummary(
+                existing.copy(name = name, updatedAt = now)
+            )
+        }
+    }
+
+    override suspend fun updateUserLocation(address: String): Result<Unit> = updateAddress(address)
 }

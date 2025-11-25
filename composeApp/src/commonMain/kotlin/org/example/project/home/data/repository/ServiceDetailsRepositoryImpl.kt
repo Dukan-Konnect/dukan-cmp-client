@@ -1,4 +1,4 @@
-package org.example.project.home.data
+package org.example.project.home.data.repository
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
