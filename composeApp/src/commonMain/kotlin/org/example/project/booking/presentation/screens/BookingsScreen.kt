@@ -1,4 +1,4 @@
-package org.example.project.bookings.presentation.screens
+package org.example.project.booking.presentation.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

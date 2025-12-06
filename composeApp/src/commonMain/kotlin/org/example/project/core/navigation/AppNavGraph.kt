@@ -7,15 +7,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
-import org.example.project.home.presentation.screens.HomeScreen
-import org.example.project.bookings.presentation.screens.BookingsScreen
 import org.example.project.home.presentation.navigation.homeNavGraph
 import org.example.project.onboarding.presentation.navigation.onboardingNavGraph
-import org.example.project.profile.presentation.screens.ProfileScreen
 
 @Composable
 fun AppNavGraph(

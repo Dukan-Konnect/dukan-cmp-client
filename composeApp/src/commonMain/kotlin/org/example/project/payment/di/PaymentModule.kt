@@ -1,7 +1,7 @@
-package org.example.project.home.di
+package org.example.project.payment.di
 
 import io.ktor.client.*
-import org.example.project.home.data.repository.PaymentRepositoryImpl
+import org.example.project.payment.data.repository.PaymentRepositoryImpl
 import org.example.project.home.domain.repository.PaymentRepository
 import org.example.project.home.domain.usecase.CreatePaymentOrderUseCase
 import org.koin.dsl.module

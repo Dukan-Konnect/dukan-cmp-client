@@ -1,20 +1,26 @@
-package org.example.project.home.data.repository
+package org.example.project.payment.data.repository
 
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import io.ktor.util.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import io.ktor.util.encodeBase64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.example.project.core.log
-import org.example.project.home.data.model.RazorpayOrderRequest
-import org.example.project.home.data.model.RazorpayOrderResponse
-import org.example.project.home.domain.model.CreateOrderRequest
-import org.example.project.home.domain.model.PaymentOrder
+import org.example.project.payment.domain.model.CreateOrderRequest
+import org.example.project.payment.domain.model.PaymentOrder
 import org.example.project.home.domain.repository.PaymentRepository
+import org.example.project.payment.data.model.RazorpayOrderRequest
+import org.example.project.payment.data.model.RazorpayOrderResponse
 
 class PaymentRepositoryImpl(
     private val httpClient: HttpClient,
@@ -43,7 +49,10 @@ class PaymentRepositoryImpl(
                 )
 
                 // Helpful debug log
-                log("paymentviewmodel", "Creating Razorpay order: amount=${razorpayRequest.amount}, currency=${razorpayRequest.currency}, receipt=${razorpayRequest.receipt}")
+                log(
+                    "paymentviewmodel",
+                    "Creating Razorpay order: amount=${razorpayRequest.amount}, currency=${razorpayRequest.currency}, receipt=${razorpayRequest.receipt}"
+                )
 
                 val jsonSerializer = Json { // replicate ContentNegotiation settings
                     prettyPrint = true
@@ -60,7 +69,10 @@ class PaymentRepositoryImpl(
                     val credentials = "$razorpayKeyId:$razorpayKeySecret"
                     val encodedCredentials = credentials.encodeBase64()
                     header(HttpHeaders.Authorization, "Basic $encodedCredentials")
-                    log("paymentviewmodel", "Authorization header (Basic base64 id:secret) applied. Encoded length=${encodedCredentials.length}")
+                    log(
+                        "paymentviewmodel",
+                        "Authorization header (Basic base64 id:secret) applied. Encoded length=${encodedCredentials.length}"
+                    )
 
                     setBody(razorpayRequest)
                 }
@@ -77,7 +89,10 @@ class PaymentRepositoryImpl(
                     Result.success(paymentOrder)
                 } else {
                     val errorBody = response.bodyAsText()
-                    log("paymentviewmodel", "Failed to create order: ${response.status.value} - $errorBody")
+                    log(
+                        "paymentviewmodel",
+                        "Failed to create order: ${response.status.value} - $errorBody"
+                    )
                     Result.failure(Exception("Failed to create order: ${response.status.value} - $errorBody"))
 
                 }

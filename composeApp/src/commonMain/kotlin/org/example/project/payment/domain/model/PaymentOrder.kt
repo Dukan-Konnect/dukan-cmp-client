@@ -1,4 +1,4 @@
-package org.example.project.home.domain.model
+package org.example.project.payment.domain.model
 
 data class PaymentOrder(
     val orderId: String,

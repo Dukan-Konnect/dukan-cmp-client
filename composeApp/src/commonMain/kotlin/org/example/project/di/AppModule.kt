@@ -5,7 +5,7 @@ import org.example.project.core.di.supabaseModule
 import org.example.project.onboarding.di.onboardingModule
 import org.example.project.home.di.homeModule
 import org.example.project.home.di.cartModule
-import org.example.project.home.di.paymentModule
+import org.example.project.payment.di.paymentModule
 import org.koin.dsl.module
 
 val appModules = module {

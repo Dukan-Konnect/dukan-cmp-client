@@ -1,4 +1,4 @@
-package org.example.project.home.data.model
+package org.example.project.payment.data.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

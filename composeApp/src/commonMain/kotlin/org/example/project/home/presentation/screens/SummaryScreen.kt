@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -851,28 +852,20 @@ fun EditPhoneBottomSheetContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Country code dropdown
+
             OutlinedTextField(
                 value = "+91",
-                onValueChange = {},
-                modifier = Modifier.width(85.dp),
-                enabled = false,
-                singleLine = true,
-                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp),
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("") },
+                modifier = Modifier
+                    .width(70.dp)
+                    .padding(horizontal = 2.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    disabledBorderColor = Color(0xFFE0E0E0),
-                    disabledTextColor = Color.Black,
-                    disabledContainerColor = Color.White
+                    focusedBorderColor = Color(0xFF6C4DFF),
+                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                    focusedLabelColor = Color(0xFF6C4DFF)
                 ),
-                shape = RoundedCornerShape(8.dp),
-                trailingIcon = {
-                    Icon(
-                        imageVector = AppIcons.arrowDown,
-                        contentDescription = "Country code",
-                        tint = Color.Black,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
             )
 
             // Phone number input
