@@ -8,19 +8,35 @@ import androidx.room.ColumnInfo
 data class CartItemEntity(
     @PrimaryKey
     @ColumnInfo(name = "product_id")
-    val productId: String,
+    val productId: String, // subservice id
 
     @ColumnInfo(name = "name")
-    val name: String,
+    val name: String, // subservice name
 
     @ColumnInfo(name = "price_cents")
-    val priceCents: Long,
-
-    @ColumnInfo(name = "quantity")
-    val quantity: Int,
+    val priceCents: Long, // subservice base price
 
     @ColumnInfo(name = "image_url")
     val imageUrl: String? = null,
+
+    // Service provider fields
+    @ColumnInfo(name = "provider_id")
+    val providerId: String,
+
+    @ColumnInfo(name = "provider_name")
+    val providerName: String,
+
+    @ColumnInfo(name = "provider_image_url")
+    val providerImageUrl: String,
+
+    @ColumnInfo(name = "provider_phone_number")
+    val providerPhoneNumber: String,
+
+    @ColumnInfo(name = "provider_rating")
+    val providerRating: Double,
+
+    @ColumnInfo(name = "provider_fee_cents")
+    val providerFeeCents: Long,
 
     @ColumnInfo(name = "created_at")
     val createdAt: Long,

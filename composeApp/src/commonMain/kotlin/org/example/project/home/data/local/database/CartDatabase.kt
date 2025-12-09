@@ -2,20 +2,24 @@ package org.example.project.home.data.local.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import org.example.project.home.data.local.dao.BookingDao
 import org.example.project.home.data.local.dao.CartDao
+import org.example.project.home.data.local.entities.BookingEntity
 import org.example.project.home.data.local.entities.CartItemEntity
 import org.example.project.home.data.local.entities.CartSummaryEntity
 
 @Database(
     entities = [
         CartItemEntity::class,
-        CartSummaryEntity::class
+        CartSummaryEntity::class,
+        BookingEntity::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 abstract class CartDatabase : RoomDatabase() {
     abstract fun cartDao(): CartDao
+    abstract fun bookingDao(): BookingDao
 
     companion object {
         const val DATABASE_NAME = "cart_database.db"

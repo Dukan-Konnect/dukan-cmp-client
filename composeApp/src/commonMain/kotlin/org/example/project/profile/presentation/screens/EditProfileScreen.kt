@@ -1,6 +1,5 @@
 package org.example.project.profile.presentation.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,253 +14,216 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.example.project.core.resources.AppIcons
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.example.project.home.presentation.viewmodels.ProfileViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
-    onBack: () -> Unit = {},
-    onSaveChanges: (String, String, String) -> Unit = { _, _, _ -> },
-    onChangeProfilePicture: () -> Unit = {},
-    initialName: String = "John Kevin",
-    initialEmail: String = "johnkevin787@gmail.com",
-    initialPhone: String = "+91 1234567890",
-    profileImage: String? = null
+    viewModel: ProfileViewModel = koinViewModel(),
+    onBack: () -> Unit = {}
 ) {
-    var fullName by remember { mutableStateOf(initialName) }
-    var email by remember { mutableStateOf(initialEmail) }
-    var mobileNumber by remember { mutableStateOf(initialPhone) }
+    val state by viewModel.state.collectAsState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Header with Status Bar
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
-                shadowElevation = 2.dp
-            ) {
-                Column {
-                    // Status Bar
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "9:41",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.Black
+    var fullName by remember { mutableStateOf(state.name ?: "") }
+    var email by remember { mutableStateOf("") }
+    var mobileNumber by remember { mutableStateOf(state.phoneNumber ?: "") }
+
+    LaunchedEffect(state) {
+        fullName = state.name ?: ""
+        mobileNumber = state.phoneNumber ?: ""
+    }
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "Edit Profile",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = AppIcons.back,
+                            contentDescription = "Back",
+                            tint = Color.Black
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(
-                                imageVector = AppIcons.placeholder,
-                                contentDescription = "Signal",
-                                tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Icon(
-                                imageVector = AppIcons.placeholder,
-                                contentDescription = "WiFi",
-                                tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Icon(
-                                imageVector = AppIcons.placeholder,
-                                contentDescription = "Battery",
-                                tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.White
+                )
+            )
+        },
+        containerColor = Color.White
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Profile Picture Section
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier.size(100.dp)
+                ) {
+                    // Profile Image
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFFE8EAF6), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = AppIcons.personLarge,
+                            contentDescription = "Profile",
+                            modifier = Modifier.size(50.dp),
+                            tint = Color(0xFF6C4DFF)
+                        )
                     }
 
-                    // Title Bar
-                    Row(
+                    // Camera Icon Button
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .size(32.dp)
+                            .align(Alignment.BottomEnd)
+                            .clip(CircleShape)
+                            .background(Color(0xFF6C4DFF))
+                            .clickable { /* TODO: Add photo picker */ }
+                            .border(3.dp, Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
                     ) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = AppIcons.placeholder,
-                                contentDescription = "Back",
-                                tint = Color.Black
-                            )
-                        }
-                        Text(
-                            text = "Edit Profile",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 18.sp,
-                            color = Color.Black
+                        Icon(
+                            imageVector = AppIcons.edit,
+                            contentDescription = "Change Photo",
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
             }
 
+            // Form Fields Container
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
             ) {
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // Profile Picture Section
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier.size(100.dp)
-                    ) {
-                        // Profile Image
-                        if (profileImage != null) {
-                            Image(
-                                imageVector = AppIcons.placeholder,
-                                contentDescription = "Profile Picture",
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape)
-                                    .border(3.dp, Color(0xFFE8EAF6), CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color(0xFFE8EAF6), CircleShape)
-                                    .border(3.dp, Color(0xFFE8EAF6), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Image(
-                                    imageVector = AppIcons.placeholder,
-                                    contentDescription = "Profile",
-                                    modifier = Modifier.size(50.dp)
-                                )
-                            }
-                        }
-
-                        // Camera Icon Button
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .align(Alignment.BottomEnd)
-                                .clip(CircleShape)
-                                .background(Color(0xFF6C4DFF))
-                                .clickable(onClick = onChangeProfilePicture)
-                                .border(3.dp, Color.White, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = AppIcons.placeholder,
-                                contentDescription = "Change Photo",
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
-
                 // Full Name Field
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        "Full Name",
-                        fontSize = 13.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                Text(
+                    "Full Name",
+                    fontSize = 13.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                OutlinedTextField(
+                    value = fullName,
+                    onValueChange = { fullName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF6C4DFF),
+                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    textStyle = LocalTextStyle.current.copy(
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Normal
                     )
-                    OutlinedTextField(
-                        value = fullName,
-                        onValueChange = { fullName = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF6C4DFF),
-                            unfocusedBorderColor = Color(0xFFE0E0E0),
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        textStyle = LocalTextStyle.current.copy(
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Normal
-                        )
-                    )
-                }
+                )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Email Field
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        "Email",
-                        fontSize = 13.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF6C4DFF),
-                            unfocusedBorderColor = Color(0xFFE0E0E0),
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        textStyle = LocalTextStyle.current.copy(
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Normal
+                Text(
+                    "Email",
+                    fontSize = 13.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    placeholder = {
+                        Text(
+                            "johnkevin787@gmail.com",
+                            color = Color.Gray
                         )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF6C4DFF),
+                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    textStyle = LocalTextStyle.current.copy(
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Normal
                     )
-                }
+                )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Mobile Number Field
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        "Mobile Number",
-                        fontSize = 13.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(bottom = 8.dp)
+                Text(
+                    "Mobile Number",
+                    fontSize = 13.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                OutlinedTextField(
+                    value = if (mobileNumber.startsWith("+91")) mobileNumber else "+91 $mobileNumber",
+                    onValueChange = {
+                        val cleaned = it.removePrefix("+91").trim()
+                        mobileNumber = cleaned
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF6C4DFF),
+                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    textStyle = LocalTextStyle.current.copy(
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Normal
                     )
-                    OutlinedTextField(
-                        value = mobileNumber,
-                        onValueChange = { mobileNumber = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF6C4DFF),
-                            unfocusedBorderColor = Color(0xFFE0E0E0),
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        textStyle = LocalTextStyle.current.copy(
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Normal
-                        )
-                    )
-                }
+                )
 
                 Spacer(modifier = Modifier.height(48.dp))
 
                 // Save Changes Button
                 Button(
-                    onClick = { onSaveChanges(fullName, email, mobileNumber) },
+                    onClick = {
+                        viewModel.updateProfile(fullName, mobileNumber)
+                        onBack()
+                    },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF6C4DFF)
                     ),
@@ -284,8 +246,3 @@ fun EditProfileScreen(
     }
 }
 
-@Preview
-@Composable
-fun EditProfileScreenPreview() {
-    EditProfileScreen()
-}

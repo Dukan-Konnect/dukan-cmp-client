@@ -4,12 +4,21 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CartItem(
-    val productId: String,
-    val name: String,
-    val priceCents: Long, // Price in cents to avoid decimal issues
-    val quantity: Int,
-    val imageUrl: String? = null
-)
+    val productId: String, // subservice id
+    val name: String, // subservice name
+    val priceCents: Long, // subservice base price in cents
+    val imageUrl: String? = null,
+    // Service provider info
+    val providerId: String,
+    val providerName: String,
+    val providerImageUrl: String,
+    val providerPhoneNumber: String,
+    val providerRating: Double,
+    val providerFeeCents: Long // provider fee in cents
+) {
+    val totalPriceCents: Long
+        get() = priceCents + providerFeeCents
+}
 
 @Serializable
 data class CartSummary(
@@ -22,7 +31,7 @@ data class CartSummary(
 ) {
     companion object {
         fun calculateTotals(items: List<CartItem>, summary: CartSummary): CartTotals {
-            val itemTotalCents = items.sumOf { it.priceCents * it.quantity }
+            val itemTotalCents = items.sumOf { it.totalPriceCents }
             val taxesCents = (itemTotalCents * summary.taxPercent / 100.0).toLong()
             val totalCents = itemTotalCents + taxesCents + summary.deliveryChargesCents
 

@@ -26,6 +26,7 @@ import org.example.project.home.domain.model.CategoryItem
 import org.example.project.home.domain.model.ServiceDetails
 import org.example.project.home.domain.model.ServiceSection
 import org.example.project.home.domain.model.SubService
+import org.example.project.home.domain.model.ServiceProvider
 import org.example.project.home.presentation.viewmodels.ServiceDetailsEffect
 import org.example.project.home.presentation.viewmodels.ServiceDetailsEvent
 import org.example.project.home.presentation.viewmodels.ServiceDetailsUiState
@@ -331,12 +332,18 @@ fun ServiceDetailsScreenContent(
                         onExpandChange = { expandedSections[section.id] = it }
                     ) {
                         section.items.forEach { subService ->
-                            val q = uiState.screenCartItems[subService.id] ?: 0
+                            val selectedProvider = uiState.selectedProviders[subService.id]
+                            val availableProviders = uiState.availableProviders[subService.id]
+                            val isExpanded = uiState.expandedSubservices.contains(subService.id)
+
                             SubServiceItem(
                                 subService = subService,
-                                quantity = q,
-                                onIncrease = { intent(ServiceDetailsEvent.UpdateItemQuantity(subService.id, q + 1)) },
-                                onDecrease = { intent(ServiceDetailsEvent.UpdateItemQuantity(subService.id, (q - 1).coerceAtLeast(0))) },
+                                selectedProvider = selectedProvider,
+                                availableProviders = availableProviders,
+                                isExpanded = isExpanded,
+                                onToggleDropdown = { intent(ServiceDetailsEvent.ToggleProviderDropdown(subService.id)) },
+                                onSelectProvider = { provider -> intent(ServiceDetailsEvent.SelectProvider(subService.id, provider)) },
+                                onRemoveProvider = { intent(ServiceDetailsEvent.RemoveProvider(subService.id)) },
                                 onClick = { intent(ServiceDetailsEvent.SubServiceClicked(subService.id)) }
                             )
                         }
@@ -345,8 +352,8 @@ fun ServiceDetailsScreenContent(
             }
         }
 
-        // Bottom Cart Bar (visible when quantity > 0)
-        if (uiState.screenCartTotalQuantity > 0) {
+        // Bottom Cart Bar (visible when item count > 0)
+        if (uiState.screenCartItemCount > 0) {
             Surface(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -369,7 +376,7 @@ fun ServiceDetailsScreenContent(
                             color = Color.Black
                         )
                         Text(
-                            text = "${uiState.screenCartTotalQuantity} Item${if (uiState.screenCartTotalQuantity == 1) "" else "s"}",
+                            text = "${uiState.screenCartItemCount} Item${if (uiState.screenCartItemCount == 1) "" else "s"}",
                             fontSize = 12.sp,
                             color = Color.Gray
                         )
@@ -380,7 +387,7 @@ fun ServiceDetailsScreenContent(
                         shape = RoundedCornerShape(12.dp),
                         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
                     ) {
-                        Text("Add to Cart", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text("View Cart", color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -391,7 +398,7 @@ fun ServiceDetailsScreenContent(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = if (uiState.screenCartTotalQuantity > 0) 72.dp else 16.dp)
+                .padding(bottom = if (uiState.screenCartItemCount > 0) 72.dp else 16.dp)
         )
     }
 }
@@ -494,75 +501,208 @@ fun ExpandableServiceSection(
 @Composable
 fun SubServiceItem(
     subService: SubService,
-    quantity: Int,
-    onIncrease: () -> Unit,
-    onDecrease: () -> Unit,
+    selectedProvider: ServiceProvider?,
+    availableProviders: List<ServiceProvider>?,
+    isExpanded: Boolean,
+    onToggleDropdown: () -> Unit,
+    onSelectProvider: (ServiceProvider) -> Unit,
+    onRemoveProvider: () -> Unit,
     onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+    ) {
+        // Main Row with SubService Info
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                if (subService.image.isNotEmpty()) {
+                    AsyncImage(
+                        model = subService.image,
+                        contentDescription = subService.title,
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = AppIcons.placeholder,
+                        contentDescription = subService.title,
+                        modifier = Modifier.size(40.dp),
+                        tint = Color.Gray
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    subService.title,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp,
+                    color = Color.Black
+                )
+            }
+
+            // Add/Remove Provider Button
+            if (selectedProvider == null) {
+                Button(
+                    onClick = onToggleDropdown,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF), contentColor = Color.White),
+                    shape = RoundedCornerShape(6.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Text("Add", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                }
+            } else {
+                Button(
+                    onClick = onRemoveProvider,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF), contentColor = Color.White),
+                    shape = RoundedCornerShape(6.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Text("Remove", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        // Provider Dropdown
+        if (isExpanded) {
+            Spacer(modifier = Modifier.height(8.dp))
+            if (availableProviders == null) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally))
+            } else if (availableProviders.isEmpty()) {
+                Text(
+                    "No providers available",
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(8.dp)
+                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFF7F7F7), RoundedCornerShape(8.dp))
+                        .padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    availableProviders.forEach { provider ->
+                        ProviderItem(
+                            provider = provider,
+                            isSelected = selectedProvider?.id == provider.id,
+                            isEnabled = selectedProvider == null || selectedProvider.id == provider.id,
+                            onSelect = { onSelectProvider(provider) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProviderItem(
+    provider: ServiceProvider,
+    isSelected: Boolean,
+    isEnabled: Boolean,
+    onSelect: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(bottom = 12.dp),
-        verticalAlignment = Alignment.Top
+            .background(if (isSelected) Color(0xFFE8F5E9) else Color.White, RoundedCornerShape(8.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color.White),
-            contentAlignment = Alignment.Center
+        Row(
+            modifier = Modifier.weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (subService.image.isNotEmpty()) {
-                AsyncImage(
-                    model = subService.image,
-                    contentDescription = subService.title,
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Icon(
-                    imageVector = AppIcons.placeholder,
-                    contentDescription = subService.title,
-                    modifier = Modifier.size(40.dp),
-                    tint = Color.Gray
-                )
-            }
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                subService.title,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 15.sp,
-                color = Color.Black
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text("₹ ${subService.price}", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        }
-        if (quantity > 0) {
-            Row(
+            // Provider Image
+            AsyncImage(
+                model = provider.imageUrl,
+                contentDescription = provider.name,
                 modifier = Modifier
-                    .border(1.dp, Color(0xFF6C4DFF), RoundedCornerShape(6.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text("-", fontSize = 18.sp, color = Color(0xFF6C4DFF), fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onDecrease() })
-                Text(quantity.toString(), fontSize = 14.sp, color = Color(0xFF6C4DFF), fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
-                Text("+", fontSize = 18.sp, color = Color(0xFF6C4DFF), fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onIncrease() })
+                    .size(48.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+
+            // Provider Info
+            Column {
+                Text(
+                    provider.name,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    color = Color.Black
+                )
+                Text(
+                    provider.phoneNumber,
+                    fontSize = 10.sp,
+                    color = Color.Gray
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = AppIcons.star,
+                        contentDescription = "Rating",
+                        tint = Color(0xFFFFA000),
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Text(
+                        provider.rating.toString(),
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "₹ ${provider.fee}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                }
             }
-        } else {
-            Button(
-                onClick = onIncrease,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color(0xFF6C4DFF)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6C4DFF)),
-                shape = RoundedCornerShape(6.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                modifier = Modifier.height(32.dp)
-            ) { Text("Add", fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
+        }
+
+        // Select Button
+        Button(
+            onClick = onSelect,
+            enabled = isEnabled,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = if (isSelected) Color(0xFF6C4DFF) else Color.White,
+                contentColor = if (isSelected) Color.White else Color(0xFF6C4DFF),
+                disabledContainerColor = Color(0xFFE0E0E0),
+                disabledContentColor = Color.Gray
+            ),
+            border = if (!isSelected) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6C4DFF)) else null,
+            shape = RoundedCornerShape(6.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.height(28.dp)
+        ) {
+            Text(
+                if (isSelected) "Unselect" else "Select",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
     }
 }

@@ -39,14 +39,13 @@ import org.koin.compose.viewmodel.koinViewModel
 data class OrderItem(
     val id: String,
     val name: String,
-    val rating: String,
-    val duration: String,
     val price: Int,
-    val oldPrice: Int? = null,
     val image: String,
-    val quantity: Int = 1,
-    val isPackage: Boolean = false,
-    val packageItems: List<PackageService>? = null
+    val providerName: String,
+    val providerImage: String,
+    val providerPhone: String,
+    val providerRating: Double,
+    val providerFee: Int
 )
 
 data class PackageService(
@@ -102,12 +101,14 @@ fun SummaryScreen(
             amount = paymentAmount,
             phoneNumber = paymentPhoneNumber,
             onResult = { success ->
-                paymentOrderId = null
                 if (success) {
-                    // Payment successful - you can add success handling here
+                    // Payment successful - save bookings
+                    viewModel.saveBookingsAfterPayment(orderId)
+                    paymentOrderId = null
                     onPay()
                 } else {
                     // Payment failed or cancelled
+                    paymentOrderId = null
                     viewModel.onEvent(SummaryEvent.ErrorDismissed)
                 }
             }
@@ -119,20 +120,19 @@ fun SummaryScreen(
         OrderItem(
             id = cartItem.productId,
             name = cartItem.name,
-            rating = "",
-            duration = "",
             price = (cartItem.priceCents / 100).toInt(),
-            oldPrice = null,
             image = cartItem.imageUrl ?: "",
-            quantity = cartItem.quantity,
-            isPackage = false,
-            packageItems = null
+            providerName = cartItem.providerName,
+            providerImage = cartItem.providerImageUrl,
+            providerPhone = cartItem.providerPhoneNumber,
+            providerRating = cartItem.providerRating,
+            providerFee = (cartItem.providerFeeCents / 100).toInt() // Convert cents to rupees
         )
     }
 
     val totals = state.cartTotals
     val itemTotal = totals?.itemTotalCents?.let { viewModel.formatPrice(it) }
-        ?: viewModel.formatPrice(orders.sumOf { it.price * it.quantity }.toLong() * 100)
+        ?: viewModel.formatPrice(orders.sumOf { (it.price + it.providerFee).toLong() * 100 })
     val taxAmount = totals?.taxesCents?.let { viewModel.formatPrice(it) } ?: "₹0"
     val totalAmount = totals?.amountToPayCents?.let { viewModel.formatPrice(it) } ?: itemTotal
 
@@ -235,8 +235,8 @@ fun SummaryScreen(
                 orders.forEach { order ->
                     OrderItemRow(
                         order = order,
-                        onQuantityChange = { newQuantity ->
-                            viewModel.onEvent(SummaryEvent.UpdateItemQuantity(order.id, newQuantity))
+                        onRemove = {
+                            viewModel.onEvent(SummaryEvent.RemoveItem(order.id))
                         }
                     )
                 }
@@ -535,7 +535,7 @@ fun SummaryScreen(
 @Composable
 fun OrderItemRow(
     order: OrderItem,
-    onQuantityChange: (Int) -> Unit
+    onRemove: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -545,65 +545,109 @@ fun OrderItemRow(
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Single line: name, quantity, price
+            // Service info row with Remove button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = order.name,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Black,
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = order.name,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black
+                    )
+                }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Quantity controls
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .border(1.dp, Color(0xFF6C4DFF), RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Text(
-                            "-",
-                            fontSize = 18.sp,
-                            color = Color(0xFF6C4DFF),
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable {
-                                if (order.quantity > 1) onQuantityChange(order.quantity - 1)
-                            }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            order.quantity.toString(),
-                            fontSize = 14.sp,
-                            color = Color(0xFF6C4DFF),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "+",
-                            fontSize = 18.sp,
-                            color = Color(0xFF6C4DFF),
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable {
-                                onQuantityChange(order.quantity + 1)
-                            }
-                        )
-                    }
-
                     Text(
                         text = "₹ ${order.price}",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
+                    OutlinedButton(
+                        onClick = onRemove,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFFE53935)
+                        ),
+                        border = BorderStroke(1.dp, Color(0xFFE53935)),
+                        shape = RoundedCornerShape(6.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text(
+                            "Remove",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Provider info row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Provider Image
+                    coil3.compose.AsyncImage(
+                        model = order.providerImage,
+                        contentDescription = order.providerName,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    // Provider Info
+                    Column {
+                        Text(
+                            order.providerName,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 13.sp,
+                            color = Color.Black
+                        )
+                        Text(
+                            order.providerPhone,
+                            fontSize = 10.sp,
+                            color = Color.Gray
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = AppIcons.star,
+                                contentDescription = "Rating",
+                                tint = Color(0xFFFFA000),
+                                modifier = Modifier.size(10.dp)
+                            )
+                            Text(
+                                order.providerRating.toString(),
+                                fontSize = 11.sp,
+                                color = Color.Gray
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "₹ ${order.providerFee}",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.Black
+                            )
+                        }
+                    }
                 }
             }
         }

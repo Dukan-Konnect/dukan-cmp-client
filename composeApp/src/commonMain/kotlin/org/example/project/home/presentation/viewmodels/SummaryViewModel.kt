@@ -21,7 +21,6 @@ data class SummaryUiState(
 )
 
 sealed interface SummaryEvent {
-    data class UpdateItemQuantity(val productId: String, val quantity: Int) : SummaryEvent
     data class RemoveItem(val productId: String) : SummaryEvent
     data class UpdatePhoneNumber(val phoneNumber: String) : SummaryEvent
     data class UpdateAddress(val address: String?) : SummaryEvent
@@ -41,7 +40,8 @@ sealed interface SummaryEffect {
 
 class SummaryViewModel(
     private val cartUseCases: CartUseCases,
-    private val createPaymentOrder: org.example.project.home.domain.usecase.CreatePaymentOrderUseCase
+    private val createPaymentOrder: org.example.project.home.domain.usecase.CreatePaymentOrderUseCase,
+    private val bookingRepository: org.example.project.home.domain.repository.BookingRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SummaryUiState())
@@ -82,7 +82,6 @@ class SummaryViewModel(
 
     fun onEvent(event: SummaryEvent) {
         when (event) {
-            is SummaryEvent.UpdateItemQuantity -> updateItemQuantity(event.productId, event.quantity)
             is SummaryEvent.RemoveItem -> removeItem(event.productId)
             is SummaryEvent.UpdatePhoneNumber -> updatePhoneNumber(event.phoneNumber)
             is SummaryEvent.UpdateAddress -> updateAddress(event.address)
@@ -95,19 +94,6 @@ class SummaryViewModel(
         }
     }
 
-    private fun updateItemQuantity(productId: String, quantity: Int) {
-        viewModelScope.launch {
-            setLoading(true)
-            cartUseCases.updateItemQuantity(productId, quantity)
-                .onSuccess {
-                    // Cart data will update automatically via Flow
-                }
-                .onFailure { error ->
-                    setError("Failed to update quantity: ${error.message}")
-                }
-            setLoading(false)
-        }
-    }
 
     private fun removeItem(productId: String) {
         viewModelScope.launch {
@@ -241,18 +227,6 @@ class SummaryViewModel(
         _state.update { it.copy(errorMessage = message, isLoading = false) }
     }
 
-    // Convenience methods for UI
-    fun incrementQuantity(productId: String) {
-        viewModelScope.launch {
-            cartUseCases.incrementItemQuantity(productId)
-        }
-    }
-
-    fun decrementQuantity(productId: String) {
-        viewModelScope.launch {
-            cartUseCases.decrementItemQuantity(productId)
-        }
-    }
 
     fun formatPrice(cents: Long): String {
         return "₹${cents / 100}"
@@ -262,5 +236,54 @@ class SummaryViewModel(
         val rupees = cents / 100
         val paise = cents % 100
         return if (paise > 0) "₹$rupees.$paise" else "₹$rupees"
+    }
+
+    @OptIn(kotlin.time.ExperimentalTime::class)
+    fun saveBookingsAfterPayment(orderId: String) {
+        viewModelScope.launch {
+            try {
+                val items = _state.value.cartItems
+                val summary = _state.value.cartSummary
+
+                if (items.isEmpty()) {
+                    return@launch
+                }
+
+                val currentTime = kotlin.time.Clock.System.now().toEpochMilliseconds()
+
+                items.forEach { cartItem ->
+                    val booking = org.example.project.home.domain.model.Booking(
+                        id = "${orderId}_${cartItem.productId}",
+                        orderId = orderId,
+                        subServiceId = cartItem.productId,
+                        subServiceName = cartItem.name,
+                        subServiceImage = cartItem.imageUrl,
+                        providerId = cartItem.providerId,
+                        providerName = cartItem.providerName,
+                        providerImage = cartItem.providerImageUrl,
+                        providerPhone = cartItem.providerPhoneNumber,
+                        providerRating = cartItem.providerRating,
+                        providerFee = cartItem.providerFeeCents,
+                        servicePriceCents = cartItem.priceCents,
+                        totalAmountCents = cartItem.totalPriceCents,
+                        bookingDate = currentTime,
+                        scheduledDate = summary?.timeSlot,
+                        address = summary?.address?.let { org.example.project.home.utils.AddressFormatter.formatFullAddress(it) },
+                        status = org.example.project.home.domain.model.BookingStatus.CONFIRMED,
+                        paymentStatus = org.example.project.home.domain.model.PaymentStatus.PAID
+                    )
+
+                    bookingRepository.createBooking(booking)
+                        .onFailure { error ->
+                            _effect.emit(SummaryEffect.ShowMessage("Failed to save booking: ${error.message}"))
+                        }
+                }
+
+                // Clear cart after successful booking
+                cartUseCases.clearCartItems()
+            } catch (e: Exception) {
+                _effect.emit(SummaryEffect.ShowMessage("Error saving bookings: ${e.message}"))
+            }
+        }
     }
 }

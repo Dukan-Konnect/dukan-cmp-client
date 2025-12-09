@@ -35,36 +35,17 @@ class CartRepositoryImpl(
     }
 
     override suspend fun upsertItem(item: CartItem): Result<Unit> = runCatching {
-        val now = getCurrentTimeMillis()
-        cartDao.upsertItem(
-            CartItemEntity(
-                productId = item.productId,
-                name = item.name,
-                priceCents = item.priceCents,
-                quantity = item.quantity,
-                imageUrl = item.imageUrl,
-                createdAt = now,
-                updatedAt = now
-            )
-        )
+        cartDao.upsertItem(item.toEntity())
     }
 
     override suspend fun addItem(item: CartItem): Result<Unit> = runCatching {
-        val existing = cartDao.getCartItem(item.productId)
-        if (existing != null) {
-            cartDao.updateItemQuantity(item.productId, existing.quantity + item.quantity, getCurrentTimeMillis())
-        } else {
-            cartDao.insertOrUpdateItem(item.toEntity())
-        }
+        cartDao.upsertItem(item.toEntity())
     }
 
     override suspend fun updateItemQuantity(productId: String, quantity: Int): Result<Unit> = runCatching {
+        // Quantity is removed - if called, just remove the item
         if (quantity <= 0) {
             cartDao.deleteItem(productId)
-        } else {
-            val existing = cartDao.getCartItem(productId)
-            requireNotNull(existing) { "Item not found for update. Use upsertItem instead." }
-            cartDao.updateItemQuantity(productId, quantity, getCurrentTimeMillis())
         }
     }
 

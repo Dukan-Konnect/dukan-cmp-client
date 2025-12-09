@@ -63,52 +63,14 @@ class CartUseCases(
         return cartRepository.clearCart()
     }
 
-    // Convenience methods
-    suspend fun addOrUpdateItem(productId: String, name: String, priceCents: Long, imageUrl: String? = null): Result<Unit> {
-        val item = CartItem(
-            productId = productId,
-            name = name,
-            priceCents = priceCents,
-            quantity = 1,
-            imageUrl = imageUrl
-        )
-        return addItemToCart(item)
-    }
-
-    suspend fun incrementItemQuantity(productId: String): Result<Unit> {
-        val items = cartRepository.getCartItems()
-        return items.fold(
-            onSuccess = { cartItems ->
-                val existingItem = cartItems.find { it.productId == productId }
-                if (existingItem != null) {
-                    updateItemQuantity(productId, existingItem.quantity + 1)
-                } else {
-                    Result.failure(Exception("Item not found in cart"))
-                }
-            },
-            onFailure = { Result.failure(it) }
-        )
-    }
-
-    suspend fun decrementItemQuantity(productId: String): Result<Unit> {
-        val items = cartRepository.getCartItems()
-        return items.fold(
-            onSuccess = { cartItems ->
-                val existingItem = cartItems.find { it.productId == productId }
-                if (existingItem != null) {
-                    val newQuantity = existingItem.quantity - 1
-                    if (newQuantity <= 0) {
-                        removeItemFromCart(productId)
-                    } else {
-                        updateItemQuantity(productId, newQuantity)
-                    }
-                } else {
-                    Result.failure(Exception("Item not found in cart"))
-                }
-            },
-            onFailure = { Result.failure(it) }
-        )
-    }
 
     suspend fun updateUserName(name: String?): Result<Unit> = cartRepository.updateUserName(name)
+
+    suspend fun updateUserInfo(name: String, phoneNumber: String): Result<Unit> {
+        val nameResult = cartRepository.updateUserName(name)
+        if (nameResult.isFailure) return nameResult
+
+        val phoneResult = cartRepository.updatePhoneNumber(phoneNumber)
+        return phoneResult
+    }
 }

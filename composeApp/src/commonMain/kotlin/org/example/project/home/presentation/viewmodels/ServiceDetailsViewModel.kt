@@ -16,6 +16,7 @@ import org.example.project.home.domain.model.CategoryItem
 import org.example.project.home.domain.model.ServiceDetails
 import org.example.project.home.domain.model.ServiceSection
 import org.example.project.home.domain.model.SubService
+import org.example.project.home.domain.model.ServiceProvider
 import org.example.project.home.domain.repository.ServiceDetailsRepository
 import org.example.project.home.domain.model.CartItem
 import org.example.project.home.domain.repository.CartRepository
@@ -27,17 +28,22 @@ data class ServiceDetailsUiState(
     val selectedCategory: CategoryItem? = null,
     val filteredSections: List<ServiceSection> = emptyList(),
     val errorMessage: String? = null,
-    // Per-screen cart state (not global cart totals)
-    val screenCartItems: Map<String, Int> = emptyMap(), // subServiceId -> quantity
+    // Per-screen cart state
+    val selectedProviders: Map<String, ServiceProvider> = emptyMap(), // subServiceId -> selected provider
+    val availableProviders: Map<String, List<ServiceProvider>> = emptyMap(), // subServiceId -> list of providers
+    val expandedSubservices: Set<String> = emptySet(), // subServiceIds with expanded provider list
     val screenCartTotalCents: Long = 0L,
-    val screenCartTotalQuantity: Int = 0
+    val screenCartItemCount: Int = 0
 )
 
 sealed interface ServiceDetailsEvent {
     data class LoadService(val serviceId: Long) : ServiceDetailsEvent
     data class CategorySelected(val categoryId: String) : ServiceDetailsEvent
     data class SubServiceClicked(val subServiceId: String) : ServiceDetailsEvent
-    data class UpdateItemQuantity(val subServiceId: String, val quantity: Int) : ServiceDetailsEvent
+    data class ToggleProviderDropdown(val subServiceId: String) : ServiceDetailsEvent
+    data class LoadProviders(val subServiceId: String) : ServiceDetailsEvent
+    data class SelectProvider(val subServiceId: String, val provider: ServiceProvider) : ServiceDetailsEvent
+    data class RemoveProvider(val subServiceId: String) : ServiceDetailsEvent
     data object ViewCartClicked : ServiceDetailsEvent
     data object BackClicked : ServiceDetailsEvent
     data object Retry : ServiceDetailsEvent
@@ -69,7 +75,10 @@ class ServiceDetailsViewModel(
             is ServiceDetailsEvent.SubServiceClicked -> viewModelScope.launch {
                 _effect.emit(ServiceDetailsEffect.NavigateToSubServiceDetails(event.subServiceId))
             }
-            is ServiceDetailsEvent.UpdateItemQuantity -> onUpdateItemQuantity(event.subServiceId, event.quantity)
+            is ServiceDetailsEvent.ToggleProviderDropdown -> toggleProviderDropdown(event.subServiceId)
+            is ServiceDetailsEvent.LoadProviders -> loadProviders(event.subServiceId)
+            is ServiceDetailsEvent.SelectProvider -> selectProvider(event.subServiceId, event.provider)
+            is ServiceDetailsEvent.RemoveProvider -> removeProvider(event.subServiceId)
             ServiceDetailsEvent.ViewCartClicked -> viewModelScope.launch { _effect.emit(ServiceDetailsEffect.NavigateToSummary) }
             ServiceDetailsEvent.BackClicked -> viewModelScope.launch { _effect.emit(ServiceDetailsEffect.NavigateBack) }
             ServiceDetailsEvent.Retry -> {
@@ -110,53 +119,125 @@ class ServiceDetailsViewModel(
         }
     }
 
-    private fun onUpdateItemQuantity(subServiceId: String, quantity: Int) {
-        viewModelScope.launch {
-            val current = _state.value
-            val details = current.serviceDetails ?: return@launch
-
-            // Update local per-screen map
-            val newMap = current.screenCartItems.toMutableMap()
-            if (quantity > 0) newMap[subServiceId] = quantity else newMap.remove(subServiceId)
-
-            // Recompute totals for this screen only
-            val (totalCents, totalQty) = computeScreenTotals(details, newMap)
-            _state.update { it.copy(screenCartItems = newMap, screenCartTotalCents = totalCents, screenCartTotalQuantity = totalQty) }
-
-            val sub = findSub(details, subServiceId) ?: run {
-                _effect.emit(ServiceDetailsEffect.ShowMessage("Item not found"))
-                return@launch
-            }
-
-            if (quantity <= 0) {
-                cartRepository.removeItem(subServiceId)
+    private fun toggleProviderDropdown(subServiceId: String) {
+        _state.update { current ->
+            val expanded = current.expandedSubservices.toMutableSet()
+            if (subServiceId in expanded) {
+                expanded.remove(subServiceId)
             } else {
-                cartRepository.upsertItem(
-                    CartItem(
-                        productId = subServiceId,
-                        name = sub.title,
-                        priceCents = sub.price.toLong() * 100,
-                        quantity = quantity,
-                        imageUrl = sub.image
-                    )
-                )
+                expanded.add(subServiceId)
+                // Load providers if not already loaded
+                if (current.availableProviders[subServiceId] == null) {
+                    loadProviders(subServiceId)
+                }
+            }
+            current.copy(expandedSubservices = expanded)
+        }
+    }
+
+    private fun loadProviders(subServiceId: String) {
+        viewModelScope.launch {
+            try {
+                repository.getServiceProviders(subServiceId)
+                    .onSuccess { providers ->
+                        _state.update { current ->
+                            val newMap = current.availableProviders.toMutableMap()
+                            newMap[subServiceId] = providers
+                            current.copy(availableProviders = newMap)
+                        }
+                    }
+                    .onFailure { error ->
+                        _effect.emit(ServiceDetailsEffect.ShowMessage("Failed to load providers: ${error.message}"))
+                        log("servicedetails", "Failed to load providers: ${error.message}")
+                    }
+            } catch (e: Exception) {
+                _effect.emit(ServiceDetailsEffect.ShowMessage("Error loading providers: ${e.message}"))
+                log("servicedetails", "Error loading providers: ${e.message}")
             }
         }
     }
 
-    private fun computeScreenTotals(details: ServiceDetails, items: Map<String, Int>): Pair<Long, Int> {
+    private fun selectProvider(subServiceId: String, provider: ServiceProvider) {
+        viewModelScope.launch {
+            val details = _state.value.serviceDetails ?: return@launch
+            val subService = findSub(details, subServiceId) ?: run {
+                _effect.emit(ServiceDetailsEffect.ShowMessage("Service not found"))
+                return@launch
+            }
+
+            val currentProvider = _state.value.selectedProviders[subServiceId]
+
+            // If clicking on the already selected provider, unselect it
+            if (currentProvider?.id == provider.id) {
+                removeProvider(subServiceId)
+                return@launch
+            }
+
+            // Update UI state
+            _state.update { current ->
+                val newProviders = current.selectedProviders.toMutableMap()
+                newProviders[subServiceId] = provider
+                val (totalCents, itemCount) = computeScreenTotals(details, newProviders)
+                current.copy(
+                    selectedProviders = newProviders,
+                    screenCartTotalCents = totalCents,
+                    screenCartItemCount = itemCount
+                )
+            }
+
+            // Update Room database
+            cartRepository.upsertItem(
+                CartItem(
+                    productId = subServiceId,
+                    name = subService.title,
+                    priceCents = subService.price.toLong() * 100,
+                    imageUrl = subService.image,
+                    providerId = provider.id,
+                    providerName = provider.name,
+                    providerImageUrl = provider.imageUrl,
+                    providerPhoneNumber = provider.phoneNumber,
+                    providerRating = provider.rating,
+                    providerFeeCents = provider.fee.toLong() * 100 // Convert to cents
+                )
+            )
+        }
+    }
+
+    private fun removeProvider(subServiceId: String) {
+        viewModelScope.launch {
+            val details = _state.value.serviceDetails ?: return@launch
+
+            // Update UI state
+            _state.update { current ->
+                val newProviders = current.selectedProviders.toMutableMap()
+                newProviders.remove(subServiceId)
+                val (totalCents, itemCount) = computeScreenTotals(details, newProviders)
+                current.copy(
+                    selectedProviders = newProviders,
+                    screenCartTotalCents = totalCents,
+                    screenCartItemCount = itemCount
+                )
+            }
+
+            // Remove from Room database
+            cartRepository.removeItem(subServiceId)
+        }
+    }
+
+    private fun computeScreenTotals(details: ServiceDetails, selectedProviders: Map<String, ServiceProvider>): Pair<Long, Int> {
         var cents = 0L
-        var qty = 0
+        var count = 0
         details.sections.forEach { section ->
-            section.items.forEach { s ->
-                val q = items[s.id] ?: 0
-                if (q > 0) {
-                    cents += s.price.toLong() * 100L * q
-                    qty += q
+            section.items.forEach { sub ->
+                val provider = selectedProviders[sub.id]
+                if (provider != null) {
+                    // Convert fee to cents for calculation (fee is in rupees)
+                    cents += provider.fee.toLong() * 100
+                    count++
                 }
             }
         }
-        return cents to qty
+        return cents to count
     }
 
     private fun findSub(details: ServiceDetails, id: String): SubService? {

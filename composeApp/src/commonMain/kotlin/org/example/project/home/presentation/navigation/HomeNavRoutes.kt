@@ -7,3 +7,7 @@ data class ServiceDetailRoute(val serviceId: Long)
 
 @Serializable
 object SummaryRoute
+
+@Serializable
+object EditProfileRoute
+

@@ -28,8 +28,6 @@ interface CartDao {
     @Upsert
     suspend fun upsertItems(items: List<CartItemEntity>)
 
-    @Query("UPDATE cart_items SET quantity = :quantity, updated_at = :updatedAt WHERE product_id = :productId")
-    suspend fun updateItemQuantity(productId: String, quantity: Int, updatedAt: Long)
 
     @Query("DELETE FROM cart_items WHERE product_id = :productId")
     suspend fun deleteItem(productId: String)
@@ -40,7 +38,7 @@ interface CartDao {
     @Query("SELECT COUNT(*) FROM cart_items")
     suspend fun getItemCount(): Int
 
-    @Query("SELECT SUM(price_cents * quantity) FROM cart_items")
+    @Query("SELECT SUM(price_cents + provider_fee_cents) FROM cart_items")
     suspend fun getTotalAmount(): Long?
 
     // Cart Summary Operations

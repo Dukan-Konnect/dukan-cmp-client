@@ -49,3 +49,15 @@ data class ServiceDetails(
     val ratingText: String
         get() = "$rating ($reviewCount)"
 }
+
+@Immutable
+data class ServiceProvider(
+    val id: String,
+    val name: String,
+    val imageUrl: String,
+    val phoneNumber: String,
+    val rating: Double,
+    val fee: Int, // actual fee amount in rupees (e.g., 500 for ₹500)
+    val subserviceId: String
+)
+

@@ -127,6 +127,34 @@ actual object AppIcons {
         @Composable
         get() = loadVectorResource("ic_arrow_up")
 
+    actual val arrowForward: ImageVector
+        @Composable
+        get() = loadVectorResource("ic_arrow_forward")
+
+    actual val phone: ImageVector
+        @Composable
+        get() = loadVectorResource("ic_phone")
+
+    actual val address: ImageVector
+        @Composable
+        get() = loadVectorResource("ic_address")
+
+    actual val settings: ImageVector
+        @Composable
+        get() = loadVectorResource("ic_settings")
+
+    actual val logout: ImageVector
+        @Composable
+        get() = loadVectorResource("ic_logout")
+
+    actual val share: ImageVector
+        @Composable
+        get() = loadVectorResource("ic_share")
+
+    actual val back: ImageVector
+        @Composable
+        get() = loadVectorResource("ic_arrow_back")
+
     @Composable
     actual fun serviceIcon(name: String): ImageVector {
         // Normalize the service icon name (remove path and extension)

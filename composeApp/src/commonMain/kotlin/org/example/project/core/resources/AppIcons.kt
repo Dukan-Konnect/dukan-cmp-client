@@ -94,6 +94,27 @@ expect object AppIcons {
     val arrowUp: ImageVector
         @Composable get
 
+    val arrowForward: ImageVector
+        @Composable get
+
+    val phone: ImageVector
+        @Composable get
+
+    val address: ImageVector
+        @Composable get
+
+    val settings: ImageVector
+        @Composable get
+
+    val logout: ImageVector
+        @Composable get
+
+    val share: ImageVector
+        @Composable get
+
+    val back: ImageVector
+        @Composable get
+
     /**
      * Convert a service-provided icon string (e.g. "ic_salon_women.xml") to a platform ImageVector.
      */

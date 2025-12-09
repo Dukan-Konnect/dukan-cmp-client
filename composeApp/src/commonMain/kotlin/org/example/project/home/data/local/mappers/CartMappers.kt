@@ -13,8 +13,13 @@ fun CartItem.toEntity(): CartItemEntity {
         productId = productId,
         name = name,
         priceCents = priceCents,
-        quantity = quantity,
         imageUrl = imageUrl,
+        providerId = providerId,
+        providerName = providerName,
+        providerImageUrl = providerImageUrl,
+        providerPhoneNumber = providerPhoneNumber,
+        providerRating = providerRating,
+        providerFeeCents = providerFeeCents,
         createdAt = now,
         updatedAt = now
     )
@@ -24,8 +29,13 @@ fun CartItemEntity.toDomainModel(): CartItem = CartItem(
     productId = productId,
     name = name,
     priceCents = priceCents,
-    quantity = quantity,
-    imageUrl = imageUrl
+    imageUrl = imageUrl,
+    providerId = providerId,
+    providerName = providerName,
+    providerImageUrl = providerImageUrl,
+    providerPhoneNumber = providerPhoneNumber,
+    providerRating = providerRating,
+    providerFeeCents = providerFeeCents
 )
 
 fun List<CartItemEntity>.toDomainModels(): List<CartItem> = map { it.toDomainModel() }

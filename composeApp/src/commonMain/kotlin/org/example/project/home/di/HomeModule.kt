@@ -18,5 +18,5 @@ val homeModule = module {
     // ViewModels
     viewModel { HomeViewModel(get(), get()) }
     viewModel { ServiceDetailsViewModel(get(),get()) }
-    viewModel { SummaryViewModel(get(), get()) }
+    viewModel { SummaryViewModel(get(), get(), get()) }
 }
