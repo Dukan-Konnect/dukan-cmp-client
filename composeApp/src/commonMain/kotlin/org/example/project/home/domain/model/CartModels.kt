@@ -17,7 +17,7 @@ data class CartItem(
     val providerFeeCents: Long // provider fee in cents
 ) {
     val totalPriceCents: Long
-        get() = priceCents + providerFeeCents
+        get() = providerFeeCents // Only charge the provider fee
 }
 
 @Serializable
@@ -26,7 +26,7 @@ data class CartSummary(
     val phoneNumber: String,
     val address: String? = null,
     val timeSlot: String? = null,
-    val taxPercent: Double = 0.0,
+    val taxPercent: Double = 5.0,
     val deliveryChargesCents: Long = 0L
 ) {
     companion object {

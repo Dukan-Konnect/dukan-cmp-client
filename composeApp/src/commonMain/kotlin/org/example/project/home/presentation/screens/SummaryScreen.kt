@@ -64,7 +64,6 @@ fun SummaryScreen(
     onCouponsClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
 
     var showAddressSheet by remember { mutableStateOf(false) }
     var showTimeSlotSheet by remember { mutableStateOf(false) }
@@ -74,7 +73,7 @@ fun SummaryScreen(
     var paymentAmount by remember { mutableStateOf(0L) }
     var paymentPhoneNumber by remember { mutableStateOf("") }
 
-    // Collect effects and handle navigation/messages
+    // Collect effects and handle navigation
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -85,10 +84,7 @@ fun SummaryScreen(
                     paymentPhoneNumber = state.cartSummary?.phoneNumber ?: ""
                 }
                 is SummaryEffect.ShowMessage -> {
-                    snackbarHostState.showSnackbar(
-                        message = effect.message,
-                        duration = SnackbarDuration.Short
-                    )
+                    // Removed snackbar notification - silently ignore messages
                 }
             }
         }
@@ -132,7 +128,7 @@ fun SummaryScreen(
 
     val totals = state.cartTotals
     val itemTotal = totals?.itemTotalCents?.let { viewModel.formatPrice(it) }
-        ?: viewModel.formatPrice(orders.sumOf { (it.price + it.providerFee).toLong() * 100 })
+        ?: viewModel.formatPrice(orders.sumOf { it.providerFee.toLong() * 100 })
     val taxAmount = totals?.taxesCents?.let { viewModel.formatPrice(it) } ?: "₹0"
     val totalAmount = totals?.amountToPayCents?.let { viewModel.formatPrice(it) } ?: itemTotal
 
@@ -200,7 +196,7 @@ fun SummaryScreen(
                             onBack()
                         }) {
                             Icon(
-                                imageVector = AppIcons.placeholder,
+                                imageVector = AppIcons.arrowBack,
                                 contentDescription = "Back",
                                 tint = Color.Black
                             )
@@ -289,13 +285,13 @@ fun SummaryScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        // Tax
+                        // Tax (5%)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "Tax",
+                                "Tax (5%)",
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
@@ -366,7 +362,7 @@ fun SummaryScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = AppIcons.placeholder, // address icon
+                            imageVector = AppIcons.location, // address icon
                             contentDescription = "Address",
                             tint = Color.Black,
                             modifier = Modifier.size(20.dp)
@@ -409,7 +405,7 @@ fun SummaryScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = AppIcons.placeholder, // time icon
+                                imageVector = AppIcons.calendarClock, // time icon
                                 contentDescription = "Time slot",
                                 tint = Color.Black,
                                 modifier = Modifier.size(20.dp)
@@ -523,12 +519,6 @@ fun SummaryScreen(
                 )
             }
         }
-
-        // Snackbar for messages
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 80.dp)
-        )
     }
 }
 
@@ -564,7 +554,7 @@ fun OrderItemRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "₹ ${order.price}",
+                        text = "₹ ${order.providerFee}",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
@@ -606,9 +596,10 @@ fun OrderItemRow(
                         model = order.providerImage,
                         contentDescription = order.providerName,
                         modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
+                            .width(45.dp)
+                            .height(60.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Fit
                     )
 
                     // Provider Info
@@ -638,13 +629,6 @@ fun OrderItemRow(
                                 order.providerRating.toString(),
                                 fontSize = 11.sp,
                                 color = Color.Gray
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                "₹ ${order.providerFee}",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.Black
                             )
                         }
                     }
@@ -680,7 +664,7 @@ fun PhoneRow(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = AppIcons.placeholder, // phone icon
+                    imageVector = AppIcons.phone, // phone icon
                     contentDescription = "Phone",
                     tint = Color.Black,
                     modifier = Modifier.size(20.dp)

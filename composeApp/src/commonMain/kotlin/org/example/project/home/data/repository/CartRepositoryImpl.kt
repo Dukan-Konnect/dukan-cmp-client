@@ -81,7 +81,7 @@ class CartRepositoryImpl(
                     phoneNumber = "", // will be filled later
                     address = null,
                     timeSlot = null,
-                    taxPercent = 0.0,
+                    taxPercent = 5.0,
                     deliveryChargesCents = 0L,
                     createdAt = now,
                     updatedAt = now

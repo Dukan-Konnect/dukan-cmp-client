@@ -1,5 +1,6 @@
 package org.example.project.home.presentation.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,6 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.manv
 import org.example.project.core.log
 import org.example.project.home.domain.model.Banner
 import org.example.project.home.domain.model.Service
@@ -40,6 +43,7 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 import org.example.project.home.utils.AddressFormatter
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun HomeScreen(
@@ -54,7 +58,7 @@ fun HomeScreen(
 
     // Collect one-off effects
     LaunchedEffect(viewModel) {
-        log("navigatu","LaunchedEffect: HomeViewModel")
+
         viewModel.effect.collect { effect ->
             when (effect) {
                 is HomeEffect.NavigateToService -> {
@@ -227,14 +231,17 @@ fun HomeScreenContent(
                                 fontWeight = FontWeight.Bold,
                                 lineHeight = 24.sp
                             )
-                            Spacer(modifier = Modifier.width(2.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
 
-                            // Banner image placeholder (using Icon for now)
-                            Icon(
-                                imageVector = AppIcons.placeholder,
-                                contentDescription = "Banner",
-                                modifier = Modifier.size(120.dp),
-                                tint = Color.White.copy(alpha = 0.5f)
+                            // Banner image
+                            Image(
+                                painter = painterResource(Res.drawable.manv),
+                                contentDescription = "Banner Image",
+                                modifier = Modifier
+                                    .height(100.dp)
+                                    .width(80.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
                             )
                         }
                     }
@@ -308,7 +315,7 @@ fun ServiceSection(
                     service = service,
                     onClick = { onServiceClick(service.id) },
                     modifier = Modifier
-                        .width(96.dp)
+                        .width(100.dp)
                         .padding(vertical = 4.dp)
                 )
             }
@@ -331,7 +338,7 @@ fun ServiceItem(
     ) {
         Box(
             modifier = Modifier
-                .size(64.dp)
+                .size(75.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color.White), // white background to cover transparent icons
             contentAlignment = Alignment.Center
@@ -340,19 +347,19 @@ fun ServiceItem(
                 model = service.icon,
                 contentDescription = service.name,
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(48.dp)
                     .padding(2.dp),
                 contentScale = ContentScale.Fit
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             service.name,
             fontSize = 12.sp,
             color = Color.Black,
             textAlign = TextAlign.Center,
             fontWeight = FontWeight.Medium,
-            lineHeight = 14.sp,
+            lineHeight = 16.sp,
             modifier = Modifier.padding(horizontal = 3.5.dp)
         )
     }

@@ -63,7 +63,7 @@ data class CartSummaryEntity(
     val timeSlot: String? = null,
 
     @ColumnInfo(name = "tax_percent")
-    val taxPercent: Double = 0.0,
+    val taxPercent: Double = 5.0,
 
     @ColumnInfo(name = "delivery_charges_cents")
     val deliveryChargesCents: Long = 0L,

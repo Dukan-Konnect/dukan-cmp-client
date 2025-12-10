@@ -35,7 +35,7 @@ fun ProfileScreen(
                 title = {
                     Text(
                         text = "Profile",
-                        fontSize = 18.sp,
+                        fontSize = 22.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.Black
                     )
@@ -53,7 +53,7 @@ fun ProfileScreen(
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Profile Header Section
             Row(
@@ -157,7 +157,7 @@ fun ProfileScreen(
 
             ProfileMenuItem(
                 icon = AppIcons.info,
-                title = "About mHome Services",
+                title = "About DukanKonnect",
                 onClick = { /* TODO */ }
             )
 

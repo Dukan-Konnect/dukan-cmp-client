@@ -56,6 +56,9 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.androidx.room.sqlite.wrapper)
             implementation(libs.checkout)
+
+            // Lottie for Compose
+            implementation(libs.lottie.compose)
         }
         iosMain.dependencies {
             // Ktor Darwin engine for iOS

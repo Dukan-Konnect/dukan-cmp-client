@@ -40,14 +40,9 @@ class PaymentActivity: Activity(), PaymentResultWithDataListener, ExternalWallet
                 putExtra("signature", data?.signature)
             }
             setResult(RESULT_OK, resultIntent)
-
-            Toast.makeText(
-                this,
-                "Payment successful: $razorpayPaymentId",
-                Toast.LENGTH_LONG
-            ).show()
+            // Removed Toast notification for payment success
         } catch (e: Exception) {
-            Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            // Silently handle error
         }
         finish()
     }
@@ -91,7 +86,7 @@ class PaymentActivity: Activity(), PaymentResultWithDataListener, ExternalWallet
             val phoneNumber = intent.getStringExtra(EXTRA_PHONE_NUMBER) ?: ""
 
             val options = JSONObject()
-            options.put("name","Dukaan Konnect")
+            options.put("name","DukanKonnect")
             options.put("description","Service Booking Payment")
             //You can omit the image option to fetch the image from the Dashboard
             options.put("image","http://example.com/image/rzp.jpg")

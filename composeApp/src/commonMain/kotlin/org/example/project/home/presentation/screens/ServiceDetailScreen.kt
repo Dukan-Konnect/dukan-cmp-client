@@ -217,7 +217,7 @@ fun ServiceDetailsScreenContent(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                serviceDetails.ratingText,
+                                "4.7(3k)",//serviceDetails.ratingText,
                                 fontSize = 14.sp,
                                 color = Color.Black
                             )
@@ -523,7 +523,7 @@ fun SubServiceItem(
         ) {
             Box(
                 modifier = Modifier
-                    .size(80.dp)
+                    .size(50.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(Color.White),
                 contentAlignment = Alignment.Center
@@ -533,7 +533,7 @@ fun SubServiceItem(
                         model = subService.image,
                         contentDescription = subService.title,
                         modifier = Modifier
-                            .size(80.dp)
+                            .size(50.dp)
                             .clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop
                     )
@@ -541,7 +541,7 @@ fun SubServiceItem(
                     Icon(
                         imageVector = AppIcons.placeholder,
                         contentDescription = subService.title,
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(25.dp),
                         tint = Color.Gray
                     )
                 }
@@ -560,7 +560,7 @@ fun SubServiceItem(
             if (selectedProvider == null) {
                 Button(
                     onClick = onToggleDropdown,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF), contentColor = Color.White),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50), contentColor = Color.White),
                     shape = RoundedCornerShape(6.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                     modifier = Modifier.height(32.dp)
@@ -570,7 +570,7 @@ fun SubServiceItem(
             } else {
                 Button(
                     onClick = onRemoveProvider,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF), contentColor = Color.White),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935), contentColor = Color.White),
                     shape = RoundedCornerShape(6.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                     modifier = Modifier.height(32.dp)
@@ -639,9 +639,10 @@ fun ProviderItem(
                 model = provider.imageUrl,
                 contentDescription = provider.name,
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
+                    .width(45.dp)
+                    .height(60.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Fit
             )
 
             // Provider Info
@@ -688,12 +689,12 @@ fun ProviderItem(
             onClick = onSelect,
             enabled = isEnabled,
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isSelected) Color(0xFF6C4DFF) else Color.White,
-                contentColor = if (isSelected) Color.White else Color(0xFF6C4DFF),
+                containerColor = if (isSelected) Color(0xFFE57373) else Color.White,
+                contentColor = if (isSelected) Color.White else Color(0xFF66BB6A),
                 disabledContainerColor = Color(0xFFE0E0E0),
                 disabledContentColor = Color.Gray
             ),
-            border = if (!isSelected) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6C4DFF)) else null,
+            border = if (!isSelected) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF81C784)) else null,
             shape = RoundedCornerShape(6.dp),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
             modifier = Modifier.height(28.dp)

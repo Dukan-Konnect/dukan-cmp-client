@@ -21,7 +21,7 @@ fun FeedbackRatedScreen(
     serviceDuration: String = "2 hrs",
     serviceInfo: String = "Includes dummy info",
     rating: Int = 4,
-    feedbackComment: String = "It was good experience, thanks to mHome Services.",
+    feedbackComment: String = "It was good experience, thanks to DukaanKonnect.",
     onBackClick: () -> Unit = {},
     onSubmitFeedback: () -> Unit = {},
     modifier: Modifier = Modifier

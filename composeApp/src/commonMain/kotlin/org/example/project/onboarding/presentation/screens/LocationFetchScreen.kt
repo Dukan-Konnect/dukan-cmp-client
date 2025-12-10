@@ -4,13 +4,10 @@ import androidx.compose.animation.*
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -67,25 +64,7 @@ private fun LocationFetchContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
-        // Logo
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .background(Color(0xFF4A6CF7), RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "m",
-                color = Color.White,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Spacer(modifier = Modifier.height(40.dp))
-
-        // Animation placeholder for location fetching
+        // Animation placeholder for location fetching - almost full width
         AnimatedContent(
             targetState = uiState.currentStep,
             transitionSpec = {
@@ -151,46 +130,28 @@ private fun LocationFetchContent(
 
 @Composable
 private fun LocationFetchingAnimation() {
-    // TODO: Replace with actual location animation library compatible with CMP
-    // For now, using a simple loading animation
-    Box(
-        modifier = Modifier.size(120.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        CircularProgressIndicator(
-            modifier = Modifier.size(60.dp),
-            color = Color(0xFF4A6CF7),
-            strokeWidth = 4.dp
-        )
-
-        // Pulsing circle animation placeholder
-        Box(
-            modifier = Modifier
-                .size(100.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF4A6CF7).copy(alpha = 0.1f))
-        )
-    }
+    // Lottie animation for location fetching - almost full width
+    org.example.project.ui.LottieAnimation(
+        animationUrl = "https://lottie.host/4c31b4f6-857d-419d-97e5-7c722e5c2e99/EhLlK9bqgJ.lottie",
+        modifier = Modifier
+            .fillMaxWidth(0.9f)
+            .aspectRatio(1f),
+        loop = true,
+        speed = 1f
+    )
 }
 
 @Composable
 private fun LocationCompletedAnimation(address: String?) {
-    // TODO: Replace with actual completion animation
-    // For now, using a simple checkmark placeholder
-    Box(
+    // Lottie animation for completion - almost full width
+    org.example.project.ui.LottieAnimation(
+        animationUrl = "https://lottie.host/17c7befc-f9f2-4e6e-a977-b7c9f5455f17/2HFHUsSkt1.lottie",
         modifier = Modifier
-            .size(120.dp)
-            .clip(CircleShape)
-            .background(Color(0xFF4CAF50)),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "✓",
-            fontSize = 48.sp,
-            color = Color.White,
-            fontWeight = FontWeight.Bold
-        )
-    }
+            .fillMaxWidth(0.9f)
+            .aspectRatio(1f),
+        loop = false,
+        speed = 1f
+    )
 }
 
 enum class LocationFetchStep {

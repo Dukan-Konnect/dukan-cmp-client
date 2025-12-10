@@ -1,21 +1,27 @@
 package org.example.project.onboarding.presentation.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dukaankonnect.composeapp.generated.resources.*
 import kotlinx.coroutines.delay
 import org.example.project.onboarding.presentation.viewmodel.AuthViewModel
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -42,32 +48,28 @@ fun LoginScreen(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(80.dp))
+        Spacer(modifier = Modifier.height(40.dp))
 
-        // Logo
-        Box(
+        // Logo - Squarish with rounded corners and crop
+        Image(
+            painter = painterResource(Res.drawable.logo),
+            contentDescription = "Company Logo",
             modifier = Modifier
-                .size(80.dp)
-                .background(Color(0xFF4A6CF7), RoundedCornerShape(12.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "m",
-                color = Color.White,
-                fontSize = 40.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Text(
-            text = "mHome Services",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black,
-            modifier = Modifier.padding(top = 8.dp)
+                .size(160.dp)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color.White),
+            contentScale = ContentScale.Crop
         )
 
-        Spacer(modifier = Modifier.height(60.dp))
+        Text(
+            text = "DukanKonnect",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black,
+            modifier = Modifier.padding(top = 20.dp)
+        )
+
+        Spacer(modifier = Modifier.height(36.dp))
 
         // Phone number input
         Row(

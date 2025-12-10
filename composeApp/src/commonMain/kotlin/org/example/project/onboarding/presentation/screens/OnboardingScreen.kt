@@ -4,24 +4,26 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dukaankonnect.composeapp.generated.resources.*
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 data class OnboardingPage(
     val title: String,
     val description: String,
-    val imageRes: String // Replace with actual image resource
+    val imageRes : Painter
 )
 
 @Composable
@@ -33,18 +35,18 @@ fun OnboardingScreen(
     val pages = listOf(
         OnboardingPage(
             title = "We Provide Professional Home services at a very friendly price",
-            description = "",
-            imageRes = "professional_services"
+            description = "professional_services",
+            imageRes = painterResource(Res.drawable.onb1)
         ),
         OnboardingPage(
             title = "Easy Service booking & Scheduling",
-            description = "",
-            imageRes = "easy_booking"
+            description = "easy_booking",
+            imageRes = painterResource(Res.drawable.onb2)
         ),
         OnboardingPage(
             title = "Get Beauty parlor at your home & other Personal Grooming needs",
-            description = "",
-            imageRes = "beauty_services"
+            description = "beauty_services",
+            imageRes = painterResource(Res.drawable.onb3)
         )
     )
 
@@ -70,22 +72,16 @@ fun OnboardingScreen(
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        // Image placeholder
-        Box(
+        // Image
+        Image(
+            painter = pages[currentPage].imageRes,
+            contentDescription = pages[currentPage].description,
             modifier = Modifier
                 .size(200.dp)
                 .clip(CircleShape)
-                .background(Color.Gray.copy(alpha = 0.3f))
                 .align(Alignment.CenterHorizontally),
-            contentAlignment = Alignment.Center
-        ) {
-            // Replace with actual image
-            Text(
-                text = "Image",
-                color = Color.Gray,
-                fontSize = 16.sp
-            )
-        }
+            contentScale = ContentScale.Crop
+        )
 
         Spacer(modifier = Modifier.height(60.dp))
 

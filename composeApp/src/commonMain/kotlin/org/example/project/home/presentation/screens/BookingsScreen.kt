@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,8 +21,10 @@ import org.example.project.home.domain.model.Booking
 import org.example.project.home.domain.model.BookingStatus
 import org.example.project.home.presentation.viewmodels.BookingsViewModel
 import org.koin.compose.viewmodel.koinViewModel
-import java.text.SimpleDateFormat
-import java.util.*
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.ExperimentalTime
 
 @Composable
 fun BookingsScreen(
@@ -42,11 +43,11 @@ fun BookingsScreen(
             color = Color.White,
             shadowElevation = 2.dp
         ) {
-            Row(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(vertical = 20.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "My Bookings",
@@ -157,9 +158,10 @@ fun BookingCard(booking: Booking) {
                     model = booking.providerImage,
                     contentDescription = booking.providerName,
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
+                        .width(45.dp)
+                        .height(60.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Fit
                 )
 
                 Column(modifier = Modifier.weight(1f)) {
@@ -216,7 +218,7 @@ fun BookingCard(booking: Booking) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = AppIcons.placeholder,
+                        imageVector = AppIcons.calendarClock,
                         contentDescription = "Time",
                         tint = Color.Gray,
                         modifier = Modifier.size(16.dp)
@@ -237,7 +239,7 @@ fun BookingCard(booking: Booking) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = AppIcons.placeholder,
+                        imageVector = AppIcons.location,
                         contentDescription = "Location",
                         tint = Color.Gray,
                         modifier = Modifier.size(16.dp)
@@ -286,8 +288,22 @@ fun StatusChip(status: BookingStatus) {
     }
 }
 
+@OptIn(ExperimentalTime::class)
 private fun formatDate(timestamp: Long): String {
-    val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
-    return sdf.format(Date(timestamp))
+    val instant = Instant.fromEpochMilliseconds(timestamp)
+    val dateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
+
+    val month = when (dateTime.monthNumber) {
+        1 -> "Jan"; 2 -> "Feb"; 3 -> "Mar"; 4 -> "Apr"
+        5 -> "May"; 6 -> "Jun"; 7 -> "Jul"; 8 -> "Aug"
+        9 -> "Sep"; 10 -> "Oct"; 11 -> "Nov"; 12 -> "Dec"
+        else -> ""
+    }
+
+    val hour = if (dateTime.hour == 0) 12 else if (dateTime.hour > 12) dateTime.hour - 12 else dateTime.hour
+    val amPm = if (dateTime.hour < 12) "AM" else "PM"
+    val minute = dateTime.minute.toString().padStart(2, '0')
+
+    return "${dateTime.dayOfMonth} $month ${dateTime.year}, $hour:$minute $amPm"
 }
 

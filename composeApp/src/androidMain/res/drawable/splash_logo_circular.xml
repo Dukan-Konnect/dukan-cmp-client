@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Rounded rectangle background -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#FFFFFF" />
+            <corners android:radius="16dp" />
+            <size
+                android:width="140dp"
+                android:height="108dp" />
+        </shape>
+    </item>
+    <!-- Logo image centered with more width -->
+    <item
+        android:drawable="@drawable/logo"
+        android:width="140dp"
+        android:height="108dp"
+        android:gravity="center" />
+</layer-list>
+
