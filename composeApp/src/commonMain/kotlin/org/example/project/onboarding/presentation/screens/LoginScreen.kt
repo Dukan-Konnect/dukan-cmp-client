@@ -3,7 +3,6 @@ package org.example.project.onboarding.presentation.screens
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -20,27 +19,49 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dukaankonnect.composeapp.generated.resources.*
 import kotlinx.coroutines.delay
+import org.example.project.onboarding.presentation.viewmodel.AuthEffect
+import org.example.project.onboarding.presentation.viewmodel.AuthIntent
+import org.example.project.onboarding.presentation.viewmodel.AuthUiState
 import org.example.project.onboarding.presentation.viewmodel.AuthViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onLoginClick: (String) -> Unit,
-    viewModel: AuthViewModel = koinViewModel()
+    onNavigateToOtp: (String) -> Unit,
+    viewModel: AuthViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(uiState.error) {
-        if (uiState.error != null) {
-            // Show error for a few seconds then clear
-           delay(3000)
-            viewModel.clearError()
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is AuthEffect.NavigateToOtpScreen -> onNavigateToOtp(effect.phoneNumber)
+                else -> {}
+            }
         }
     }
 
+    LaunchedEffect(uiState.error) {
+        if (uiState.error != null) {
+            delay(3000)
+            viewModel.handleIntent(AuthIntent.ErrorDismissed)
+        }
+    }
+
+    LoginContent(
+        uiState = uiState,
+        onAction = { intent -> viewModel.handleIntent(intent) }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LoginContent(
+    uiState: AuthUiState,
+    onAction: (AuthIntent) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -50,7 +71,6 @@ fun LoginScreen(
     ) {
         Spacer(modifier = Modifier.height(40.dp))
 
-        // Logo - Squarish with rounded corners and crop
         Image(
             painter = painterResource(Res.drawable.logo),
             contentDescription = "Company Logo",
@@ -71,7 +91,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(36.dp))
 
-        // Phone number input
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -94,7 +113,7 @@ fun LoginScreen(
 
             OutlinedTextField(
                 value = uiState.phoneNumber,
-                onValueChange = { viewModel.onPhoneNumberChange(it) },
+                onValueChange = { onAction(AuthIntent.PhoneNumberChanged(it)) },
                 label = { Text("Mobile Number") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 modifier = Modifier
@@ -109,10 +128,9 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Error message
         if (uiState.error != null) {
             Text(
-                text = uiState.error!!,
+                text = uiState.error,
                 fontSize = 12.sp,
                 color = Color.Red,
                 textAlign = TextAlign.Center,
@@ -122,7 +140,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Terms and conditions text
         Text(
             text = "We will use your phone number for verification\npurpose. For this we will send you OTP.",
             fontSize = 12.sp,
@@ -133,13 +150,10 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Login button
         Button(
-            onClick = { viewModel.sendOtp(onLoginClick) },
+            onClick = { onAction(AuthIntent.SendOtpClicked) },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4A6CF7)
-            ),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A6CF7)),
             shape = RoundedCornerShape(8.dp),
             enabled = uiState.phoneNumber.length == 10 && !uiState.isLoading
         ) {
@@ -167,5 +181,21 @@ fun LoginScreen(
 @Preview
 @Composable
 fun LoginScreenPreview() {
-    LoginScreen(onLoginClick = {})
+    MaterialTheme {
+        LoginContent(
+            uiState = AuthUiState(phoneNumber = "1234567890", isLoading = false),
+            onAction = {}
+        )
+    }
+}
+
+@Preview
+@Composable
+fun LoginScreenLoadingPreview() {
+    MaterialTheme {
+        LoginContent(
+            uiState = AuthUiState(phoneNumber = "1234567890", isLoading = true),
+            onAction = {}
+        )
+    }
 }

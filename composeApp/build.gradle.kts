@@ -8,6 +8,10 @@ plugins {
     kotlin("plugin.serialization") version "2.2.20"
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
+    alias(libs.plugins.ktorfit)
+}
+ktorfit {
+    compilerPluginVersion.set("2.3.3")
 }
 
 
@@ -96,6 +100,7 @@ kotlin {
             implementation(libs.coil.network.ktor3)
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
+            implementation(libs.ktorfit.lib)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

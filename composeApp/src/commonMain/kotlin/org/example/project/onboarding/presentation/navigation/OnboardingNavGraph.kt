@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
 import androidx.navigation.toRoute
 import org.example.project.core.navigation.HomeRoute
 import org.example.project.core.navigation.OnboardingRoute
@@ -15,9 +16,10 @@ import org.example.project.onboarding.presentation.screens.LocationFetchScreenWi
 import org.example.project.onboarding.presentation.screens.NameCaptureScreen
 import org.example.project.onboarding.presentation.screens.OTPScreen
 import org.example.project.onboarding.presentation.screens.OnboardingScreen
+import org.example.project.onboarding.presentation.viewmodel.AuthViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 
-// Type-safe onboarding navigation graph using Kotlinx Serialization
 fun NavGraphBuilder.onboardingNavGraph(navController: NavHostController) {
     composable<OnboardingRoute> {
         var currentPage by remember { mutableStateOf(0) }
@@ -27,43 +29,50 @@ fun NavGraphBuilder.onboardingNavGraph(navController: NavHostController) {
                 if (currentPage < 2) {
                     currentPage++
                 } else {
-                    navController.navigate(LoginRoute) {
+                    navController.navigate(AuthRoute) {
                         popUpTo<OnboardingRoute> { inclusive = true }
                     }
                 }
             },
             onSkipClick = {
-                navController.navigate(LoginRoute) {
+                navController.navigate(AuthRoute) {
                     popUpTo<OnboardingRoute> { inclusive = true }
                 }
             }
         )
     }
+    navigation<AuthRoute>(startDestination = LoginRoute) {
 
-    composable<LoginRoute> {
-        LoginScreen(
-            onLoginClick = { phoneNumber ->
-                navController.navigate(OtpRoute(phoneNumber = phoneNumber)) {
-                    popUpTo<LoginRoute> { inclusive = true }
-                }
+        composable<LoginRoute> { backStackEntry ->
+            val parentEntry = remember(backStackEntry) {
+                navController.getBackStackEntry<AuthRoute>()
             }
-        )
-    }
+            val sharedViewModel: AuthViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
 
-    composable<OtpRoute> { backStackEntry ->
-        val args = backStackEntry.toRoute<OtpRoute>()
-
-        OTPScreen(
-            phoneNumber = args.phoneNumber,
-            onVerifyClick = {
-                navController.navigate(NameCaptureRoute(phoneNumber = args.phoneNumber)) {
-                    popUpTo<OtpRoute> { inclusive = true }
+            LoginScreen(
+                viewModel = sharedViewModel,
+                onNavigateToOtp = {
+                    navController.navigate(OtpRoute)
                 }
-            },
-            onResendClick = {
-                // Handle resend
+            )
+        }
+
+        composable<OtpRoute> { backStackEntry ->
+            val parentEntry = remember(backStackEntry) {
+                navController.getBackStackEntry<AuthRoute>()
             }
-        )
+            val sharedViewModel: AuthViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
+
+            OTPScreen(
+                viewModel = sharedViewModel,
+                onAuthSuccess = { phoneNumber ->
+                    navController.navigate(NameCaptureRoute(phoneNumber)) {
+                        // Pop the entire AuthRoute graph so user can't go back to OTP
+                        popUpTo<AuthRoute> { inclusive = true }
+                    }
+                }
+            )
+        }
     }
 
     composable<NameCaptureRoute> { backStackEntry ->

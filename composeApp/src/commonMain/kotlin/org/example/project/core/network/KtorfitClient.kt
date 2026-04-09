@@ -1,0 +1,52 @@
+/*
+ * Copyright 2026 Mifos Initiative
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * See https://github.com/openMF/mobile-mobile/blob/master/LICENSE.md
+ */
+package org.example.project.core.network
+
+import de.jensklingenberg.ktorfit.Ktorfit
+import io.ktor.client.HttpClient
+import org.example.project.core.network.services.createAuthenticationService
+import kotlin.getValue
+
+
+class KtorfitClient(ktorfit: Ktorfit) {
+
+    // Ktorfit generates the implementation for your interfaces automatically
+    internal val authenticationApi by lazy { ktorfit.createAuthenticationService() }
+
+    // Add other APIs as you build them
+    // internal val clientsApi by lazy { ktorfit.createClientService() }
+
+    class Builder internal constructor() {
+        private lateinit var baseURL: String
+        private lateinit var httpClient: HttpClient
+
+        fun baseURL(baseURL: String): Builder {
+            this.baseURL = baseURL
+            return this
+        }
+
+        fun httpClient(ktorHttpClient: HttpClient): Builder {
+            this.httpClient = ktorHttpClient
+            return this
+        }
+
+        fun build(): KtorfitClient {
+            val ktorfitBuilder = Ktorfit.Builder()
+                .httpClient(httpClient)
+                .baseUrl(baseURL)
+                .build()
+            return KtorfitClient(ktorfitBuilder)
+        }
+    }
+
+    companion object {
+        fun builder(): Builder = Builder()
+    }
+}

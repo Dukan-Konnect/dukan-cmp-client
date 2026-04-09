@@ -3,10 +3,12 @@ package org.example.project.onboarding.presentation.navigation
 import kotlinx.serialization.Serializable
 
 @Serializable
+object AuthRoute
+@Serializable
 object LoginRoute
 
 @Serializable
-data class OtpRoute(val phoneNumber: String)
+data object OtpRoute
 
 @Serializable
 object LocationFetchRoute

@@ -1,7 +1,12 @@
 package org.example.project.onboarding.domain.repository
 
+import org.example.project.core.network.dto.auth.VerifyResponseDto
+import org.example.project.core.utils.DataState
+
 interface AuthRepository {
-    suspend fun sendOtp(phoneNumber: String): Result<Boolean>
-    suspend fun verifyOtp(phoneNumber: String, otp: String): Result<String>
+    suspend fun requestOtp(phoneNumber: String): DataState<String>
+
+    suspend fun verifyOtp(phoneNumber: String, otp: String): DataState<VerifyResponseDto>
+
     suspend fun createAccount(phoneNumber: String): Result<Boolean>
 }

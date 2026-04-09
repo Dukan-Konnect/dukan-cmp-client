@@ -22,22 +22,49 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import org.example.project.onboarding.presentation.viewmodel.AuthEffect
+import org.example.project.onboarding.presentation.viewmodel.AuthIntent
+import org.example.project.onboarding.presentation.viewmodel.AuthUiState
 import org.example.project.onboarding.presentation.viewmodel.AuthViewModel
-
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun OTPScreen(
-    phoneNumber: String,
-    onVerifyClick: () -> Unit,
-    onResendClick: () -> Unit,
-    viewModel: AuthViewModel = koinViewModel()
+    onAuthSuccess: (String) -> Unit,
+    viewModel: AuthViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    LaunchedEffect(Unit) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is AuthEffect.NavigateToHome -> onAuthSuccess(uiState.phoneNumber)
+                else -> {}
+            }
+        }
+    }
 
-    // derive digit list from viewmodel otp (survives config changes)
+
+    LaunchedEffect(uiState.error) {
+        if (uiState.error != null) {
+            delay(3000)
+            viewModel.handleIntent(AuthIntent.ErrorDismissed)
+        }
+    }
+
+    OTPContent(
+        uiState = uiState,
+        onAction = { intent -> viewModel.handleIntent(intent) }
+    )
+}
+
+@Composable
+fun OTPContent(
+    uiState: AuthUiState,
+    onAction: (AuthIntent) -> Unit
+) {
     val otpString = uiState.otp
     val otpDigits = remember(otpString) {
         List(6) { index -> otpString.getOrNull(index)?.toString() ?: "" }
@@ -46,19 +73,12 @@ fun OTPScreen(
     val focusRequesters = remember { List(6) { FocusRequester() } }
     val focusManager = LocalFocusManager.current
 
-    // Auto-focus first field on screen load (safe access)
-    LaunchedEffect(Unit) {
-        viewModel.onPhoneNumberChange(phoneNumber)
-        kotlinx.coroutines.delay(300)
-        focusRequesters.getOrNull(0)?.requestFocus()
-    }
-
-    LaunchedEffect(uiState.error) {
-        if (uiState.error != null) {
-            kotlinx.coroutines.delay(3000)
-            viewModel.clearError()
-        }
-    }
+//     Auto-focus first field on screen load (safe access)
+//    LaunchedEffect(Unit) {
+//        viewModel.onPhoneNumberChange(phoneNumber)
+//        kotlinx.coroutines.delay(300)
+//        focusRequesters.getOrNull(0)?.requestFocus()
+//    }
 
     Column(
         modifier = Modifier
@@ -79,7 +99,7 @@ fun OTPScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "We have sent you a 6 digit verification\ncode on +91 $phoneNumber",
+            text = "We have sent you a 6 digit verification\ncode on +91 ${uiState.phoneNumber}",
             fontSize = 14.sp,
             color = Color.Gray,
             textAlign = TextAlign.Center,
@@ -88,7 +108,6 @@ fun OTPScreen(
 
         Spacer(modifier = Modifier.height(40.dp))
 
-        // OTP input fields
         Row(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.padding(horizontal = 32.dp)
@@ -98,11 +117,10 @@ fun OTPScreen(
                 OTPDigitField(
                     value = digit,
                     onValueChange = { newValue ->
-                        // build new otp from current digits and update viewmodel
                         val list = MutableList(6) { i -> otpDigits.getOrNull(i) ?: "" }
                         list[index] = newValue
                         val combined = list.joinToString(separator = "") { it }
-                        viewModel.onOtpChange(combined)
+                        onAction(AuthIntent.OtpChanged(combined))
                     },
                     onNext = {
                         focusRequesters.getOrNull(index + 1)?.requestFocus() ?: focusManager.clearFocus()
@@ -119,10 +137,9 @@ fun OTPScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Error message
         if (uiState.error != null) {
             Text(
-                text = uiState.error!!,
+                text = uiState.error,
                 fontSize = 12.sp,
                 color = Color.Red,
                 textAlign = TextAlign.Center,
@@ -132,9 +149,8 @@ fun OTPScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Verify button - enabled when viewmodel otp has 6 digits
         Button(
-            onClick = { viewModel.verifyOtp(onVerifyClick) },
+            onClick = { onAction(AuthIntent.VerifyOtpClicked) }, // HOISTED
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF4A6CF7)
@@ -161,9 +177,8 @@ fun OTPScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Resend option
         TextButton(
-            onClick = onResendClick,
+            onClick = { onAction(AuthIntent.SendOtpClicked) }, // HOISTED
             enabled = !uiState.isLoading
         ) {
             Text(
@@ -197,10 +212,8 @@ fun OTPDigitField(
         )
     }
 
-    // Keep a copy of previous text to detect deletions
     var previousText by remember { mutableStateOf(value) }
 
-    // Sync when value changes externally
     LaunchedEffect(value) {
         if (textFieldValue.text != value) {
             textFieldValue = TextFieldValue(
@@ -218,26 +231,22 @@ fun OTPDigitField(
 
             when {
                 newText.length == 1 -> {
-                    // user entered a digit
                     textFieldValue = TextFieldValue(text = newText, selection = TextRange(1))
                     onValueChange(newText)
                     onNext()
                 }
                 newText.length > 1 -> {
-                    // paste or multi-digit input: keep the first digit here and let caller propagate rest
                     val firstDigit = newText.first().toString()
                     textFieldValue = TextFieldValue(text = firstDigit, selection = TextRange(1))
                     onValueChange(firstDigit)
                     onNext()
                 }
                 newText.isEmpty() && previousText.isNotEmpty() -> {
-                    // backspace deleted the character
                     textFieldValue = TextFieldValue(text = "", selection = TextRange(0))
                     onValueChange("")
                     onPrevious()
                 }
                 else -> {
-                    // nothing or unsupported change
                     textFieldValue = TextFieldValue(text = newText, selection = TextRange(newText.length))
                 }
             }
@@ -286,9 +295,8 @@ fun OTPDigitField(
 @Preview
 @Composable
 fun OTPScreenPreview() {
-    OTPScreen(
-        phoneNumber = "+1234567890",
-        onVerifyClick = {},
-        onResendClick = {}
+    OTPContent(
+        uiState = AuthUiState(),
+        onAction = {}
     )
 }
