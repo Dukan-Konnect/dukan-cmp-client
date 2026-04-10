@@ -1,4 +1,4 @@
-package org.example.project.onboarding.domain.repository
+package org.example.project.core.data.repository
 
 import org.example.project.core.network.dto.auth.VerifyResponseDto
 import org.example.project.core.utils.DataState

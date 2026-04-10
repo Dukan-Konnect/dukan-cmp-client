@@ -15,13 +15,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import org.example.project.onboarding.presentation.viewmodel.LocationFetchViewModel
+import org.example.project.ui.LottieAnimation
 import org.koin.compose.viewmodel.koinViewModel
 
-/**
- * Platform-specific wrapper that handles permission requests before showing LocationFetchScreen.
- * Android implementation will request location permissions.
- * iOS implementation can handle location authorization.
- */
 @Composable
 expect fun LocationFetchScreenWithPermissions(
     onLocationFetched: () -> Unit
@@ -34,14 +30,13 @@ fun LocationFetchScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // ViewModel will start its own initialization (e.g., fetch location) when created.
     LaunchedEffect(Unit) {
         viewModel.startLocationFlow()
     }
 
     LaunchedEffect(uiState.isCompleted) {
         if (uiState.isCompleted) {
-            delay(1500) // Show completion animation for a bit
+            delay(1500)
             onLocationFetched()
         }
     }
@@ -64,7 +59,6 @@ private fun LocationFetchContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Animation placeholder for location fetching - almost full width
         AnimatedContent(
             targetState = uiState.currentStep,
             transitionSpec = {
@@ -130,8 +124,7 @@ private fun LocationFetchContent(
 
 @Composable
 private fun LocationFetchingAnimation() {
-    // Lottie animation for location fetching - almost full width
-    org.example.project.ui.LottieAnimation(
+    LottieAnimation(
         animationUrl = "https://lottie.host/4c31b4f6-857d-419d-97e5-7c722e5c2e99/EhLlK9bqgJ.lottie",
         modifier = Modifier
             .fillMaxWidth(0.9f)
@@ -143,8 +136,7 @@ private fun LocationFetchingAnimation() {
 
 @Composable
 private fun LocationCompletedAnimation(address: String?) {
-    // Lottie animation for completion - almost full width
-    org.example.project.ui.LottieAnimation(
+    LottieAnimation(
         animationUrl = "https://lottie.host/17c7befc-f9f2-4e6e-a977-b7c9f5455f17/2HFHUsSkt1.lottie",
         modifier = Modifier
             .fillMaxWidth(0.9f)

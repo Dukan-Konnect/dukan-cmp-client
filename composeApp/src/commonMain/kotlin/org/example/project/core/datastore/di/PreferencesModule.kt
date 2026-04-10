@@ -1,4 +1,4 @@
-package org.example.project.core.di
+package org.example.project.core.datastore.di
 
 import com.russhwolf.settings.Settings
 import org.example.project.core.datastore.UserPreferencesDataSource

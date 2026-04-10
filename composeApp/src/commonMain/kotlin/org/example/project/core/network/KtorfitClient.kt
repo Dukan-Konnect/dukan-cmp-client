@@ -12,16 +12,15 @@ package org.example.project.core.network
 import de.jensklingenberg.ktorfit.Ktorfit
 import io.ktor.client.HttpClient
 import org.example.project.core.network.services.createAuthenticationService
+import org.example.project.core.network.services.createProfileService
 import kotlin.getValue
 
 
 class KtorfitClient(ktorfit: Ktorfit) {
 
-    // Ktorfit generates the implementation for your interfaces automatically
     internal val authenticationApi by lazy { ktorfit.createAuthenticationService() }
 
-    // Add other APIs as you build them
-    // internal val clientsApi by lazy { ktorfit.createClientService() }
+    internal val profileApi by lazy { ktorfit.createProfileService() }
 
     class Builder internal constructor() {
         private lateinit var baseURL: String

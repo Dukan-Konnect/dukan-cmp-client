@@ -28,11 +28,10 @@ import org.example.project.onboarding.presentation.viewmodel.AuthIntent
 import org.example.project.onboarding.presentation.viewmodel.AuthUiState
 import org.example.project.onboarding.presentation.viewmodel.AuthViewModel
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun OTPScreen(
-    onAuthSuccess: (String) -> Unit,
+    onAuthSuccess: (String,Boolean) -> Unit,
     viewModel: AuthViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -40,7 +39,7 @@ fun OTPScreen(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is AuthEffect.NavigateToHome -> onAuthSuccess(uiState.phoneNumber)
+                is AuthEffect.NavigateToNextScreen -> onAuthSuccess(uiState.phoneNumber,viewModel.isNewUser)
                 else -> {}
             }
         }
@@ -72,13 +71,6 @@ fun OTPContent(
 
     val focusRequesters = remember { List(6) { FocusRequester() } }
     val focusManager = LocalFocusManager.current
-
-//     Auto-focus first field on screen load (safe access)
-//    LaunchedEffect(Unit) {
-//        viewModel.onPhoneNumberChange(phoneNumber)
-//        kotlinx.coroutines.delay(300)
-//        focusRequesters.getOrNull(0)?.requestFocus()
-//    }
 
     Column(
         modifier = Modifier

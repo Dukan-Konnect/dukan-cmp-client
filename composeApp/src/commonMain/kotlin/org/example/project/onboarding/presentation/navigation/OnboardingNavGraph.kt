@@ -65,20 +65,23 @@ fun NavGraphBuilder.onboardingNavGraph(navController: NavHostController) {
 
             OTPScreen(
                 viewModel = sharedViewModel,
-                onAuthSuccess = { phoneNumber ->
-                    navController.navigate(NameCaptureRoute(phoneNumber)) {
-                        // Pop the entire AuthRoute graph so user can't go back to OTP
-                        popUpTo<AuthRoute> { inclusive = true }
+                onAuthSuccess = { phoneNumber,isNewUser ->
+                    if(isNewUser) {
+                        navController.navigate(NameCaptureRoute(phoneNumber)) {
+                            popUpTo<AuthRoute> { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(HomeRoute) {
+                            popUpTo<AuthRoute> { inclusive = true }
+                        }
                     }
                 }
             )
         }
     }
 
-    composable<NameCaptureRoute> { backStackEntry ->
-        val args = backStackEntry.toRoute<NameCaptureRoute>()
+    composable<NameCaptureRoute> {
         NameCaptureScreen(
-            phoneNumber = args.phoneNumber,
             onNameConfirmed = {
                 navController.navigate(LocationFetchRoute) {
                     popUpTo<NameCaptureRoute> { inclusive = true }
