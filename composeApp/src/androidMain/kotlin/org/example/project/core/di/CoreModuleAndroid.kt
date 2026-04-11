@@ -1,6 +1,5 @@
 package org.example.project.core.di
 
-import org.example.project.home.domain.location.LocationPermissionHandler
 import org.example.project.home.domain.location.LocationProvider
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module

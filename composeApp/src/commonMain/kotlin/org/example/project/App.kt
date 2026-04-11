@@ -13,6 +13,7 @@ import org.example.project.core.navigation.AppNavGraph
 import org.example.project.core.navigation.HomeRoute
 import org.example.project.core.navigation.OnboardingRoute
 import org.example.project.core.utils.createImageLoader
+import org.example.project.onboarding.presentation.navigation.LocationFetchRoute
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
 
@@ -27,7 +28,7 @@ fun App() {
 
         val isLoggedIn by userPreferences.isLoggedIn.collectAsState()
 
-        val start = if (isLoggedIn) HomeRoute else OnboardingRoute
+        val start = LocationFetchRoute//if (isLoggedIn) HomeRoute else OnboardingRoute
 
         Box(modifier = Modifier.fillMaxSize()) {
             AppNavGraph(startDestination = start)

@@ -39,7 +39,7 @@ fun OTPScreen(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is AuthEffect.NavigateToNextScreen -> onAuthSuccess(uiState.phoneNumber,viewModel.isNewUser)
+                is AuthEffect.NavigateToNextScreen -> onAuthSuccess(uiState.phoneNumber,true)
                 else -> {}
             }
         }
@@ -142,7 +142,7 @@ fun OTPContent(
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { onAction(AuthIntent.VerifyOtpClicked) }, // HOISTED
+            onClick = { onAction(AuthIntent.VerifyOtpClicked) },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color(0xFF4A6CF7)
