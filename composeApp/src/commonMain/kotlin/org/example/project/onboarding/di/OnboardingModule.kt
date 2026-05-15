@@ -7,11 +7,7 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 val onboardingModule = module {
-    // Repository
 
-
-
-    // ViewModels with dependencies
     viewModelOf(::AuthViewModel)
     viewModelOf(::LocationFetchViewModel)
     viewModelOf(::NameCaptureViewModel)

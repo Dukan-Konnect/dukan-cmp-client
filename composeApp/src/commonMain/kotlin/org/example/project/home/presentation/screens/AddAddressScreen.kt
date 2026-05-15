@@ -13,7 +13,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.example.project.core.resources.AppIcons
+import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_arrow_back
+import dukaankonnect.composeapp.generated.resources.ic_location
+import dukaankonnect.composeapp.generated.resources.ic_logout
+import dukaankonnect.composeapp.generated.resources.ic_phone
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -54,13 +59,13 @@ fun AddAddressScreen(
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(
-                                imageVector = AppIcons.signal,
+                                painter = painterResource(Res.drawable.ic_location),
                                 contentDescription = "Signal",
                                 tint = Color.Black,
                                 modifier = Modifier.size(16.dp)
                             )
                             Icon(
-                                imageVector = AppIcons.battery,
+                                painter = painterResource(Res.drawable.ic_phone),
                                 contentDescription = "Battery",
                                 tint = Color.Black,
                                 modifier = Modifier.size(16.dp)
@@ -68,7 +73,7 @@ fun AddAddressScreen(
                         }
                     }
 
-                    // Title Bar
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -79,7 +84,7 @@ fun AddAddressScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = onClose) {
                                 Icon(
-                                    imageVector = AppIcons.arrowBack,
+                                    painter = painterResource(Res.drawable.ic_arrow_back),
                                     contentDescription = "Back",
                                     tint = Color.Black
                                 )
@@ -103,7 +108,7 @@ fun AddAddressScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = AppIcons.close,
+                                    painter = painterResource(Res.drawable.ic_logout),
                                     contentDescription = "Close",
                                     tint = Color.White,
                                     modifier = Modifier.size(20.dp)
@@ -114,19 +119,16 @@ fun AddAddressScreen(
                 }
             }
 
-            // Map Section
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .background(Color(0xFFE8EAF6)) // Light blue-grey background for map placeholder
+                    .background(Color(0xFFE8EAF6))
             ) {
-                // Map Placeholder (In a real app, you'd integrate Google Maps or similar)
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Location pin area with circle
                     Box(
                         modifier = Modifier
                             .size(180.dp)
@@ -145,9 +147,9 @@ fun AddAddressScreen(
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-                            // Location Pin Icon
+
                             Icon(
-                                imageVector = AppIcons.locationPin,
+                                painter = painterResource(Res.drawable.ic_location),
                                 contentDescription = "Location",
                                 tint = Color(0xFF6C4DFF),
                                 modifier = Modifier.size(48.dp)
@@ -156,7 +158,6 @@ fun AddAddressScreen(
                     }
                 }
 
-                // "Your professional will arrive here" tooltip
                 Surface(
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -203,7 +204,7 @@ fun AddAddressScreen(
                     shape = CircleShape
                 ) {
                     Icon(
-                        imageVector = AppIcons.myLocation,
+                        painter = painterResource(Res.drawable.ic_location),
                         contentDescription = "My Location",
                         tint = Color.Black,
                         modifier = Modifier.size(24.dp)

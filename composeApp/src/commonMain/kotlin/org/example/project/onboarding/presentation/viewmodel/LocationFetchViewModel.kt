@@ -11,12 +11,14 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.example.project.home.domain.location.LocationProvider
+import org.example.project.core.datastore.UserPreferencesRepository
+import org.example.project.core.utils.location.LocationProvider
+import org.example.project.home.domain.model.UserLocation
 import org.example.project.home.domain.repository.CartRepository
 
 class LocationFetchViewModel(
-    private val cartRepository: CartRepository,
-    private val locationProvider: LocationProvider
+    private val locationProvider: LocationProvider,
+    private val prefRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LocationFetchUiState())
@@ -28,9 +30,6 @@ class LocationFetchViewModel(
     )
     val effect: SharedFlow<LocationFetchEffect> = _effect.asSharedFlow()
 
-    // REMOVED the init block. The platform wrapper will tell us exactly when to start
-    // based on hardware checks (ON_RESUME).
-
     fun handleIntent(intent: LocationFetchIntent) {
         when (intent) {
             is LocationFetchIntent.StartLocationFlow -> startFetching()
@@ -38,7 +37,7 @@ class LocationFetchViewModel(
             is LocationFetchIntent.PermissionDenied -> showError(LocationErrorState.PERMISSION_DENIED)
             is LocationFetchIntent.GpsDisabled -> showError(LocationErrorState.GPS_DISABLED)
             is LocationFetchIntent.ActionClicked -> handleActionClicked()
-            is LocationFetchIntent.RetryClicked -> startFetching() // For the secondary retry button
+            is LocationFetchIntent.RetryClicked -> startFetching()
             is LocationFetchIntent.ContinueWithoutLocation -> handleContinueWithoutLocation()
         }
     }
@@ -53,15 +52,13 @@ class LocationFetchViewModel(
 
         viewModelScope.launch {
             try {
-                var userLocation: org.example.project.home.domain.model.UserLocation? = null
+                var userLocation: UserLocation? = null
                 var attempts = 0
 
-                // HARDWARE GRACE PERIOD
-                // Give the GPS chip up to 3 seconds to "lock on" if it was just turned on.
                 while (userLocation == null && attempts < 3) {
                     userLocation = locationProvider.getCurrentLocation()
                     if (userLocation == null) {
-                        kotlinx.coroutines.delay(1000) // Wait 1 second
+                        kotlinx.coroutines.delay(1000)
                         attempts++
                     }
                 }
@@ -71,11 +68,12 @@ class LocationFetchViewModel(
                     return@launch
                 }
 
+
                 val formattedAddress = userLocation.address
 
-                cartRepository.updateUserLocation(formattedAddress)
-                    .onSuccess {
-                        _uiState.update { state ->
+                prefRepository.updateAddress(formattedAddress)
+
+                _uiState.update { state ->
                             state.copy(
                                 currentStep = LocationFetchStep.COMPLETED,
                                 address = formattedAddress,
@@ -83,10 +81,7 @@ class LocationFetchViewModel(
                             )
                         }
                         _effect.emit(LocationFetchEffect.NavigateToNextScreen)
-                    }
-                    .onFailure {
-                        showError(LocationErrorState.SAVE_FAILED)
-                    }
+
 
             } catch (e: Exception) {
                 showError(LocationErrorState.FETCH_FAILED)
@@ -102,7 +97,7 @@ class LocationFetchViewModel(
                 LocationErrorState.GPS_DISABLED ->
                     _effect.emit(LocationFetchEffect.PromptGpsSettings)
                 LocationErrorState.FETCH_FAILED, LocationErrorState.SAVE_FAILED ->
-                    startFetching() // Primary button IS retry here
+                    startFetching()
                 null -> {}
             }
         }
@@ -110,7 +105,6 @@ class LocationFetchViewModel(
 
     private fun handleContinueWithoutLocation() {
         viewModelScope.launch {
-            // Emits navigation to bypass the screen entirely
             _effect.emit(LocationFetchEffect.NavigateToNextScreen)
         }
     }

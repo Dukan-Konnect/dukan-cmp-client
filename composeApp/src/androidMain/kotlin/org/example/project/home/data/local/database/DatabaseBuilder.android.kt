@@ -13,7 +13,7 @@ fun createCartDatabase(context: Context): CartDatabase {
     .build()
 }
 
-// This will be called from Koin module with context
-actual fun getDatabaseBuilder(): CartDatabase {
-    throw IllegalStateException("Use createCartDatabase(context) instead")
-}
+//// This will be called from Koin module with context
+//actual fun getDatabaseBuilder(): CartDatabase {
+//    throw IllegalStateException("Use createCartDatabase(context) instead")
+//}

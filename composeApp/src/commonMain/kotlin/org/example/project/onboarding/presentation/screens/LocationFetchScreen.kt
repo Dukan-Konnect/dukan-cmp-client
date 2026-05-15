@@ -44,7 +44,7 @@ fun LocationFetchScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 is LocationFetchEffect.NavigateToNextScreen -> {
-                    if (uiState.isCompleted) delay(1500) // Only delay if showing success animation
+                    if (uiState.isCompleted) delay(1500)
                     onLocationFetched()
                 }
                 is LocationFetchEffect.OpenAppSettings -> onOpenAppSettings()

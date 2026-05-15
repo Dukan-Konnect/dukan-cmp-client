@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import org.example.project.core.utils.location.LocationPermissionHandler
 import org.example.project.onboarding.presentation.viewmodel.LocationFetchIntent
 import org.example.project.onboarding.presentation.viewmodel.LocationFetchViewModel
 import org.koin.compose.koinInject

@@ -4,21 +4,19 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.example.project.core.data.repository.ProfileRepository
+import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.utils.DataState
 import org.example.project.onboarding.presentation.navigation.NameCaptureRoute
 
 class NameCaptureViewModel(
     private val profileRepository: ProfileRepository,
+    private val prefRepository: UserPreferencesRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -26,11 +24,6 @@ class NameCaptureViewModel(
     val uiState: StateFlow<NameCaptureUiState> = _uiState.asStateFlow()
 
     private val phoneNumber: String = savedStateHandle.toRoute<NameCaptureRoute>().phoneNumber
-    private val _effect = MutableSharedFlow<NameCaptureEffect>(
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-    val effect: SharedFlow<NameCaptureEffect> = _effect.asSharedFlow()
 
     fun handleIntent(intent: NameCaptureIntent) {
         when (intent) {
@@ -69,7 +62,7 @@ class NameCaptureViewModel(
             when (val result = profileRepository.updateNameAndEmail(currentName, currentEmail, phoneNumber)) {
                 is DataState.Success<*> -> {
                     hideLoading()
-                    _effect.emit(NameCaptureEffect.NavigateToNextScreen)
+                    prefRepository.setLoggedIn(true)
                 }
                 is DataState.Error -> {
                     showError(result.exception.message ?: "Failed to save profile")
@@ -99,8 +92,6 @@ class NameCaptureViewModel(
 
     private val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[a-zA-z]{2,}\$".toRegex()
 }
-
-// --- MVI Components ---
 
 sealed class NameCaptureIntent {
     data class NameChanged(val name: String) : NameCaptureIntent()

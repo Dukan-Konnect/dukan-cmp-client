@@ -18,6 +18,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_arrow_back
+import dukaankonnect.composeapp.generated.resources.ic_arrow_forward
+import dukaankonnect.composeapp.generated.resources.ic_edit
+import dukaankonnect.composeapp.generated.resources.ic_home
+import dukaankonnect.composeapp.generated.resources.ic_info
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 data class DateOption(
@@ -84,35 +91,7 @@ fun SelectTimeSlotScreen(
                 shadowElevation = 2.dp
             ) {
                 Column {
-                    // Status Bar
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "9:30",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.Black
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(
-                                imageVector = asyncImageVectorOrPlaceholder("drawable/ic_signal.xml"),
-                                contentDescription = "Signal",
-                                tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Icon(
-                                imageVector = asyncImageVectorOrPlaceholder("drawable/ic_battery.xml"),
-                                contentDescription = "Battery",
-                                tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
+
 
                     // Title Bar
                     Row(
@@ -125,7 +104,7 @@ fun SelectTimeSlotScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = onBack) {
                                 Icon(
-                                    imageVector = asyncImageVectorOrPlaceholder("drawable/ic_arrow_back.xml"),
+                                    painter = painterResource(Res.drawable.ic_arrow_back),
                                     contentDescription = "Back",
                                     tint = Color.Black
                                 )
@@ -149,7 +128,7 @@ fun SelectTimeSlotScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = asyncImageVectorOrPlaceholder("drawable/ic_close.xml"),
+                                    painter = painterResource(Res.drawable.ic_edit),
                                     contentDescription = "Close",
                                     tint = Color.White,
                                     modifier = Modifier.size(20.dp)
@@ -187,7 +166,7 @@ fun SelectTimeSlotScreen(
                             modifier = Modifier.weight(1f)
                         ) {
                             Icon(
-                                imageVector = asyncImageVectorOrPlaceholder("drawable/ic_home.xml"),
+                                painter = painterResource(Res.drawable.ic_home),
                                 contentDescription = "Home",
                                 tint = Color(0xFF6C4DFF),
                                 modifier = Modifier.size(24.dp)
@@ -202,7 +181,7 @@ fun SelectTimeSlotScreen(
                             )
                         }
                         Icon(
-                            imageVector = asyncImageVectorOrPlaceholder("drawable/ic_arrow_right.xml"),
+                            painter = painterResource(Res.drawable.ic_arrow_forward),
                             contentDescription = "Change",
                             tint = Color.Gray,
                             modifier = Modifier.size(20.dp)
@@ -262,7 +241,7 @@ fun SelectTimeSlotScreen(
                             verticalAlignment = Alignment.Top
                         ) {
                             Icon(
-                                imageVector = asyncImageVectorOrPlaceholder("drawable/ic_info_outline.xml"),
+                                painter = painterResource(Res.drawable.ic_info),
                                 contentDescription = "Info",
                                 tint = Color.Gray,
                                 modifier = Modifier.size(20.dp)

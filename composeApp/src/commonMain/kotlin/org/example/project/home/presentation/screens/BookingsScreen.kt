@@ -16,7 +16,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import org.example.project.core.resources.AppIcons
+import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_calendar_clock
+import dukaankonnect.composeapp.generated.resources.ic_edit
+import dukaankonnect.composeapp.generated.resources.ic_location
+import dukaankonnect.composeapp.generated.resources.ic_star
 import org.example.project.home.domain.model.Booking
 import org.example.project.home.domain.model.BookingStatus
 import org.example.project.home.presentation.viewmodels.BookingsViewModel
@@ -24,6 +28,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.jetbrains.compose.resources.painterResource
 import kotlin.time.ExperimentalTime
 
 @Composable
@@ -77,7 +82,7 @@ fun BookingsScreen(
                     modifier = Modifier.padding(32.dp)
                 ) {
                     Icon(
-                        imageVector = AppIcons.placeholder,
+                        painter = painterResource(Res.drawable.ic_edit),
                         contentDescription = "No bookings",
                         modifier = Modifier.size(80.dp),
                         tint = Color.Gray
@@ -181,7 +186,7 @@ fun BookingCard(booking: Booking) {
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Icon(
-                            imageVector = AppIcons.star,
+                            painter = painterResource(Res.drawable.ic_star),
                             contentDescription = "Rating",
                             tint = Color(0xFFFFA000),
                             modifier = Modifier.size(12.dp)
@@ -218,7 +223,7 @@ fun BookingCard(booking: Booking) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = AppIcons.calendarClock,
+                        painter = painterResource(Res.drawable.ic_calendar_clock),
                         contentDescription = "Time",
                         tint = Color.Gray,
                         modifier = Modifier.size(16.dp)
@@ -239,7 +244,7 @@ fun BookingCard(booking: Booking) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Icon(
-                        imageVector = AppIcons.location,
+                        painter = painterResource(Res.drawable.ic_location),
                         contentDescription = "Location",
                         tint = Color.Gray,
                         modifier = Modifier.size(16.dp)

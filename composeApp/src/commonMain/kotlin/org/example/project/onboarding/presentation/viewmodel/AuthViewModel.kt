@@ -13,9 +13,11 @@ import kotlinx.coroutines.launch
 import org.example.project.core.data.repository.AuthRepository
 import org.example.project.core.utils.DataState
 import kotlinx.coroutines.channels.BufferOverflow
+import org.example.project.core.datastore.UserPreferencesRepository
 
 class AuthViewModel(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val prefRepository: UserPreferencesRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AuthUiState())
@@ -107,7 +109,8 @@ class AuthViewModel(
                 is DataState.Success -> {
                     isNewUser = result.data.isNewUser
                     hideLoading()
-                    _effect.emit(AuthEffect.NavigateToNextScreen)
+                    if(isNewUser) _effect.emit(AuthEffect.NavigateToNextScreen)
+                    else prefRepository.setLoggedIn(true)
                 }
 
                 is DataState.Error -> {

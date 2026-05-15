@@ -1,3 +1,4 @@
+import org.gradle.kotlin.dsl.implementation
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -61,8 +62,11 @@ kotlin {
             implementation(libs.androidx.room.sqlite.wrapper)
             implementation(libs.checkout)
 
-            // Lottie for Compose
-            implementation(libs.lottie.compose)
+
+            // Pure Kotlin Lottie Engine
+            implementation(libs.compottie)
+            // Need Ktor to load animations from the network natively
+            implementation(libs.compottie.network)
         }
         iosMain.dependencies {
             // Ktor Darwin engine for iOS
@@ -93,7 +97,9 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.client.logging)
             implementation(libs.ktor.serialization.kotlinx.json)
-            implementation(libs.multiplatform.settings.no.arg)
+            implementation(libs.multiplatform.settings)
+            implementation(libs.multiplatform.settings.serialization)
+            implementation(libs.multiplatform.settings.coroutines)
             implementation(libs.coil3.coil.compose)
             // Pick one based on your Ktor version:
             // For Ktor 3.x:
@@ -101,6 +107,12 @@ kotlin {
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
             implementation(libs.ktorfit.lib)
+            implementation(libs.compottie)
+            implementation(libs.compottie.lite)
+            implementation(libs.compottie.dot)
+            implementation(libs.compottie.network)
+            implementation(libs.compottie.resources)
+
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -17,8 +17,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.example.project.core.resources.AppIcons
+import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_arrow_back
+import dukaankonnect.composeapp.generated.resources.ic_edit
+import dukaankonnect.composeapp.generated.resources.ic_person_large
 import org.example.project.home.presentation.viewmodels.ProfileViewModel
+import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,7 +56,7 @@ fun EditProfileScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = AppIcons.back,
+                            painter = painterResource(Res.drawable.ic_arrow_back),
                             contentDescription = "Back",
                             tint = Color.Black
                         )
@@ -91,7 +95,7 @@ fun EditProfileScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = AppIcons.personLarge,
+                            painter = painterResource(Res.drawable.ic_person_large),
                             contentDescription = "Profile",
                             modifier = Modifier.size(50.dp),
                             tint = Color(0xFF6C4DFF)
@@ -110,7 +114,7 @@ fun EditProfileScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = AppIcons.edit,
+                            painter = painterResource(Res.drawable.ic_edit),
                             contentDescription = "Change Photo",
                             tint = Color.White,
                             modifier = Modifier.size(16.dp)

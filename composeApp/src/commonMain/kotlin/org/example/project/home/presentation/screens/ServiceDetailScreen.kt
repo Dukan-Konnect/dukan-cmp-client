@@ -21,7 +21,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import org.example.project.core.resources.AppIcons
+import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_arrow_back
+import dukaankonnect.composeapp.generated.resources.ic_arrow_down
+import dukaankonnect.composeapp.generated.resources.ic_arrow_up
+import dukaankonnect.composeapp.generated.resources.ic_calendar
+import dukaankonnect.composeapp.generated.resources.ic_edit
+import dukaankonnect.composeapp.generated.resources.ic_star
 import org.example.project.home.domain.model.CategoryItem
 import org.example.project.home.domain.model.ServiceDetails
 import org.example.project.home.domain.model.ServiceSection
@@ -31,6 +37,7 @@ import org.example.project.home.presentation.viewmodels.ServiceDetailsEffect
 import org.example.project.home.presentation.viewmodels.ServiceDetailsEvent
 import org.example.project.home.presentation.viewmodels.ServiceDetailsUiState
 import org.example.project.home.presentation.viewmodels.ServiceDetailsViewModel
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -133,7 +140,7 @@ fun ServiceDetailsScreenContent(
                     ) {
                         IconButton(onClick = { intent(ServiceDetailsEvent.BackClicked) }) {
                             Icon(
-                                imageVector = AppIcons.arrowBack,
+                                painter = painterResource(Res.drawable.ic_arrow_back),
                                 contentDescription = "Back",
                                 tint = Color.Black
                             )
@@ -210,7 +217,7 @@ fun ServiceDetailsScreenContent(
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = AppIcons.star,
+                                painter = painterResource(Res.drawable.ic_star),
                                 contentDescription = "Rating",
                                 tint = Color(0xFFFFA000),
                                 modifier = Modifier.size(12.dp)
@@ -227,7 +234,7 @@ fun ServiceDetailsScreenContent(
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                imageVector = AppIcons.calendar,
+                                painter = painterResource(Res.drawable.ic_calendar),
                                 contentDescription = "Calendar",
                                 tint = Color.Gray,
                                 modifier = Modifier.size(20.dp)
@@ -253,7 +260,7 @@ fun ServiceDetailsScreenContent(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    imageVector = AppIcons.placeholder,
+                                    painter = painterResource(Res.drawable.ic_edit),
                                     contentDescription = "Package",
                                     tint = Color(0xFF00C853),
                                     modifier = Modifier.size(24.dp)
@@ -274,7 +281,7 @@ fun ServiceDetailsScreenContent(
                                 }
                             }
                             Icon(
-                                imageVector = AppIcons.placeholder,
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = "Arrow",
                                 tint = Color.Gray,
                                 modifier = Modifier.size(20.dp)
@@ -429,7 +436,7 @@ fun CategoryItem(
                 )
             } else {
                 Icon(
-                    imageVector = AppIcons.placeholder,
+                    painter = painterResource(Res.drawable.ic_edit),
                     contentDescription = category.label,
                     modifier = Modifier.size(32.dp),
                     tint = Color.Gray
@@ -480,7 +487,7 @@ fun ExpandableServiceSection(
                     color = Color.Black
                 )
                 Icon(
-                    imageVector = if(expanded) AppIcons.arrowUp else AppIcons.arrowDown,
+                    painter = if(expanded) painterResource(Res.drawable.ic_arrow_up) else painterResource(Res.drawable.ic_arrow_down),
                     contentDescription = if (expanded) "Collapse" else "Expand",
                     tint = Color.Gray,
                     modifier = Modifier.size(24.dp)
@@ -496,6 +503,14 @@ fun ExpandableServiceSection(
             }
         }
     }
+}
+
+private fun RowScope.Icon(
+    imageVector: Any,
+    contentDescription: String,
+    tint: Color,
+    modifier: Modifier
+) {
 }
 
 @Composable
@@ -539,7 +554,7 @@ fun SubServiceItem(
                     )
                 } else {
                     Icon(
-                        imageVector = AppIcons.placeholder,
+                        painter = painterResource(Res.drawable.ic_edit),
                         contentDescription = subService.title,
                         modifier = Modifier.size(25.dp),
                         tint = Color.Gray
@@ -663,7 +678,7 @@ fun ProviderItem(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Icon(
-                        imageVector = AppIcons.star,
+                        painter = painterResource(Res.drawable.ic_star),
                         contentDescription = "Rating",
                         tint = Color(0xFFFFA000),
                         modifier = Modifier.size(12.dp)

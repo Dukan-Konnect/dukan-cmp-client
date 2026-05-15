@@ -5,6 +5,7 @@ import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.network.KtorfitClient
 import org.example.project.core.network.ktorHttpClient
 import org.example.project.core.network.services.AuthenticationService
+import org.example.project.core.network.services.HomeService
 import org.example.project.core.network.services.ProfileService
 import org.example.project.core.utils.BaseURL
 import org.example.project.core.utils.KtorInterceptor
@@ -20,7 +21,7 @@ val networkModule = module {
 
             install(KtorInterceptor) {
 
-                getToken = { preferencesRepository.token.value }
+                getToken = { preferencesRepository.userData.value.token }
 
             }
         }
@@ -39,6 +40,10 @@ val networkModule = module {
 
     single<ProfileService> {
         get<KtorfitClient>().profileApi
+    }
+
+    single<HomeService> {
+        get<KtorfitClient>().homeApi
     }
 
 

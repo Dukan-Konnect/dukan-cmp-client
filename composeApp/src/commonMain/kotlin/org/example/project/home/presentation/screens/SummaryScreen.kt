@@ -28,11 +28,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.example.project.core.resources.AppIcons
+import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_arrow_back
+import dukaankonnect.composeapp.generated.resources.ic_calendar_clock
+import dukaankonnect.composeapp.generated.resources.ic_edit
+import dukaankonnect.composeapp.generated.resources.ic_location
+import dukaankonnect.composeapp.generated.resources.ic_phone
+import dukaankonnect.composeapp.generated.resources.ic_star
 import org.example.project.home.presentation.viewmodels.SummaryEffect
 import org.example.project.home.presentation.viewmodels.SummaryEvent
 import org.example.project.home.presentation.viewmodels.SummaryViewModel
-import org.example.project.home.utils.AddressFormatter
+import org.example.project.core.utils.AddressFormatter
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -144,7 +151,7 @@ fun SummaryScreen(
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
-                    imageVector = AppIcons.placeholder,
+                    painter = painterResource(Res.drawable.ic_edit),
                     contentDescription = "Empty cart",
                     modifier = Modifier.size(64.dp),
                     tint = Color.Gray
@@ -196,7 +203,7 @@ fun SummaryScreen(
                             onBack()
                         }) {
                             Icon(
-                                imageVector = AppIcons.arrowBack,
+                                painter = painterResource(Res.drawable.ic_arrow_back),
                                 contentDescription = "Back",
                                 tint = Color.Black
                             )
@@ -362,7 +369,7 @@ fun SummaryScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = AppIcons.location, // address icon
+                            painter = painterResource(Res.drawable.ic_location), // address icon
                             contentDescription = "Address",
                             tint = Color.Black,
                             modifier = Modifier.size(20.dp)
@@ -381,7 +388,7 @@ fun SummaryScreen(
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
-                            imageVector = AppIcons.edit, // edit/pencil icon - use placeholder for now
+                            painter = painterResource(Res.drawable.ic_edit), // edit/pencil icon - use placeholder for now
                             contentDescription = "Edit address",
                             tint = Color(0xFF6C4DFF),
                             modifier = Modifier.size(20.dp)
@@ -405,7 +412,7 @@ fun SummaryScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = AppIcons.calendarClock, // time icon
+                                painter = painterResource(Res.drawable.ic_calendar_clock), // time icon
                                 contentDescription = "Time slot",
                                 tint = Color.Black,
                                 modifier = Modifier.size(20.dp)
@@ -424,7 +431,7 @@ fun SummaryScreen(
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
-                                imageVector = AppIcons.edit, // edit/pencil icon - use placeholder for now
+                                painter = painterResource(Res.drawable.ic_edit), // edit/pencil icon - use placeholder for now
                                 contentDescription = "Edit time slot",
                                 tint = Color(0xFF6C4DFF),
                                 modifier = Modifier.size(20.dp)
@@ -620,7 +627,7 @@ fun OrderItemRow(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Icon(
-                                imageVector = AppIcons.star,
+                                painter = painterResource(Res.drawable.ic_star),
                                 contentDescription = "Rating",
                                 tint = Color(0xFFFFA000),
                                 modifier = Modifier.size(10.dp)
@@ -664,7 +671,7 @@ fun PhoneRow(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = AppIcons.phone, // phone icon
+                    painter = painterResource(Res.drawable.ic_phone), // phone icon
                     contentDescription = "Phone",
                     tint = Color.Black,
                     modifier = Modifier.size(20.dp)
@@ -866,7 +873,7 @@ fun EditPhoneBottomSheetContent(
                 modifier = Modifier.size(40.dp)
             ) {
                 Icon(
-                    imageVector = AppIcons.close,
+                    painter = painterResource(Res.drawable.ic_edit),
                     contentDescription = "Close",
                     tint = Color.Black
                 )
@@ -917,7 +924,7 @@ fun EditPhoneBottomSheetContent(
                 shape = RoundedCornerShape(8.dp),
                 trailingIcon = {
                     Icon(
-                        imageVector = AppIcons.placeholder, // contact icon
+                        painter = painterResource(Res.drawable.ic_edit), // contact icon
                         contentDescription = "Contact",
                         tint = Color.Gray,
                         modifier = Modifier.size(20.dp)

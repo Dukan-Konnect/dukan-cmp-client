@@ -29,7 +29,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun LoginScreen(
-    onNavigateToOtp: (String) -> Unit,
+    onNavigateToOtp: () -> Unit,
     viewModel: AuthViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -37,7 +37,7 @@ fun LoginScreen(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is AuthEffect.NavigateToOtpScreen -> onNavigateToOtp(effect.phoneNumber)
+                is AuthEffect.NavigateToOtpScreen -> onNavigateToOtp()
                 else -> {}
             }
         }

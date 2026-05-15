@@ -8,5 +8,4 @@ interface AuthRepository {
 
     suspend fun verifyOtp(phoneNumber: String, otp: String): DataState<VerifyResponseDto>
 
-    suspend fun createAccount(phoneNumber: String): Result<Boolean>
 }

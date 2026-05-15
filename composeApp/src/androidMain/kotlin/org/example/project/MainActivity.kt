@@ -1,6 +1,5 @@
 package org.example.project
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -8,7 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import org.example.project.home.domain.location.LocationProvider
+import org.example.project.core.utils.location.LocationProvider
 import org.koin.android.ext.android.inject
 import org.koin.core.parameter.parametersOf
 

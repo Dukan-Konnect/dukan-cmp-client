@@ -1,45 +1,44 @@
 package org.example.project.home.presentation.viewmodels
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
-import androidx.compose.runtime.Immutable
-import org.example.project.core.log
-import org.example.project.home.domain.model.Banner
-import org.example.project.home.domain.model.Service
-import org.example.project.home.domain.model.UserLocation
-import org.example.project.home.domain.repository.HomeRepository
-import org.example.project.home.domain.repository.CartRepository
+import org.example.project.core.data.repository.HomeRepository
+import org.example.project.core.datastore.UserPreferencesRepository
+import org.example.project.core.model.home.Banner
+import org.example.project.core.model.home.Service
+import org.example.project.core.utils.DataState
 
 @Immutable
 data class HomeUiState(
     val isLoading: Boolean = false,
-    val userLocation: UserLocation? = null,
-    val savedAddress: String? = null,
+    val isSearchEnabled: Boolean = false, // <-- Added to control TextField state
+    val userLocation: String? = "Unable to fetch location",
     val banner: Banner? = null,
-    val personalServices: List<Service> = emptyList(),
-    val homeServices: List<Service> = emptyList(),
-    val trendingServices: List<Service> = emptyList(),
-    val errorMessage: String? = null,
-    val searchQuery: String = ""
+    val personalService: List<Service> = emptyList(),
+    val homeService: List<Service> = emptyList(),
+    val trendingService: List<Service> = emptyList(),
+    val searchQuery: String = "",
+    val searchResults: List<Service> = emptyList() // <-- Added to hold filtered results
 )
 
-sealed interface HomeEvent {
-    data object ScreenStarted : HomeEvent
-    data object LocationClicked : HomeEvent
-    data class SearchQueryChanged(val query: String) : HomeEvent
-    data object BannerClicked : HomeEvent
-    data class ServiceClicked(val id: Int) : HomeEvent
-    data object Retry : HomeEvent
-    data object ErrorDismissed : HomeEvent
+sealed interface HomeIntent {
+    data object ScreenStarted : HomeIntent
+    data object LocationClicked : HomeIntent
+    data class SearchQueryChanged(val query: String) : HomeIntent
+    data object BannerClicked : HomeIntent
+    data class ServiceClicked(val id: Int) : HomeIntent
+    data object Retry : HomeIntent
 }
 
 sealed interface HomeEffect {
@@ -51,148 +50,135 @@ sealed interface HomeEffect {
 
 class HomeViewModel(
     private val homeRepository: HomeRepository,
-    private val cartRepository: CartRepository
+    private val prefRepository: UserPreferencesRepository
 ) : ViewModel() {
 
-    // Single source of truth for UI state (MVI)
-    private val _state = MutableStateFlow(HomeUiState())
-    val state: StateFlow<HomeUiState> = _state.asStateFlow()
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
-    // One-off events (navigation, toasts)
-    private val _effect = MutableSharedFlow<HomeEffect>()
+    private val _effect = MutableSharedFlow<HomeEffect>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
     val effect: SharedFlow<HomeEffect> = _effect.asSharedFlow()
 
     init {
-        onEvent(HomeEvent.ScreenStarted)
+        observeUserLocation()
+        handleIntent(HomeIntent.ScreenStarted)
     }
 
-    fun onEvent(event: HomeEvent) {
-        when (event) {
-            HomeEvent.ScreenStarted -> loadAllData()
-            HomeEvent.LocationClicked -> viewModelScope.launch { _effect.emit(HomeEffect.OpenLocationPicker) }
-            is HomeEvent.SearchQueryChanged -> _state.update { it.copy(searchQuery = event.query) }
-            HomeEvent.BannerClicked -> viewModelScope.launch { _effect.emit(HomeEffect.OpenBanner) }
-            is HomeEvent.ServiceClicked -> viewModelScope.launch { _effect.emit(HomeEffect.NavigateToService(event.id)) }
-            HomeEvent.Retry -> {
-                clearError()
-                loadAllData()
-            }
-            HomeEvent.ErrorDismissed -> clearError()
-
+    fun handleIntent(intent: HomeIntent) {
+        when (intent) {
+            HomeIntent.ScreenStarted -> loadAllData()
+            HomeIntent.LocationClicked -> emitEffect(HomeEffect.OpenLocationPicker)
+            is HomeIntent.SearchQueryChanged -> updateSearchQuery(intent.query)
+            HomeIntent.BannerClicked -> emitEffect(HomeEffect.OpenBanner)
+            is HomeIntent.ServiceClicked -> emitEffect(HomeEffect.NavigateToService(intent.id))
+            HomeIntent.Retry -> loadAllData()
         }
     }
 
-    private fun setLoading(loading: Boolean) {
-        _state.update { it.copy(isLoading = loading) }
-    }
+    private fun updateSearchQuery(query: String) {
+        val allAvailableServices = (_uiState.value.personalService +
+                _uiState.value.homeService +
+                _uiState.value.trendingService).distinctBy { it.id }
 
-    private fun setError(message: String?) {
-        _state.update { it.copy(errorMessage = message) }
-    }
+        val results = if (query.isBlank()) {
+            emptyList()
+        } else {
+            allAvailableServices.filter {
+                it.name.contains(query, ignoreCase = true)
+            }
+        }
 
-    private fun clearError() = setError(null)
+        _uiState.update {
+            it.copy(
+                searchQuery = query,
+                searchResults = results
+            )
+        }
+    }
 
     private fun loadAllData() {
         viewModelScope.launch {
+            showLoading()
 
-            yield()
-            setLoading(true)
-            try {
-                // Launch sequentially to keep flow similar to previous behavior.
-                loadUserLocation()
-                loadSavedAddress()
-                loadBanner()
-                loadPersonalServices()
-                loadHomeServices()
-                loadTrendingServices()
-            } finally {
-                setLoading(false)
-            }
+            // Disable search while fresh data is loading
+            _uiState.update { it.copy(isSearchEnabled = false) }
+
+            // Fetch data
+            loadPersonalServices()
+            loadHomeServices()
+            loadTrendingServices()
+
+            // Enable search once everything is fully loaded
+            _uiState.update { it.copy(isSearchEnabled = true) }
+            hideLoading()
         }
     }
 
-    private suspend fun loadUserLocation() {
-        try {
-            val result = homeRepository.getUserLocation()
-            result.onSuccess { location ->
-                _state.update { it.copy(userLocation = location) }
-            }.onFailure { error ->
-                setError("Failed to load location: ${error.message}")
+    private fun observeUserLocation() {
+        viewModelScope.launch {
+            prefRepository.userData.collectLatest { userData ->
+                val displayAddress = userData.address.ifEmpty { "Unable to fetch location" }
+                _uiState.update { it.copy(userLocation = displayAddress) }
             }
-        } catch (e: Exception) {
-            setError("Error loading location: ${e.message}")
-        }
-    }
-
-    private suspend fun loadSavedAddress() {
-        try {
-            val result = cartRepository.getCartSummary()
-            result.onSuccess { summary ->
-                _state.update { it.copy(savedAddress = summary?.address) }
-            }.onFailure { error ->
-                log("homeviewmodel", "Failed to load saved address: ${error.message}")
-            }
-        } catch (e: Exception) {
-            log("homeviewmodel", "Error loading saved address: ${e.message}")
-        }
-    }
-
-    private suspend fun loadBanner() {
-        try {
-            val result = homeRepository.getBanner()
-            result.onSuccess { banner ->
-                _state.update { it.copy(banner = banner) }
-            }.onFailure { error ->
-                setError("Failed to load banner: ${'$'}{error.message}")
-            }
-        } catch (e: Exception) {
-            setError("Error loading banner: ${'$'}{e.message}")
         }
     }
 
     private suspend fun loadPersonalServices() {
-        try {
-            val result = homeRepository.getPersonalServices()
-            result.onSuccess { services ->
-                _state.update { it.copy(personalServices = services) }
-                log("homeviewmodel", "personal services: s")
-                log("navigatu","HomeViewModel")
-            }.onFailure { error ->
-                setError("Failed to load personal services: ${'$'}{error.message}")
-                log("homeviewmodel", "ee : ${'$'}{error.message}")
+        when (val result = homeRepository.getPersonalServices()) {
+            is DataState.Success -> {
+                _uiState.update { it.copy(personalService = result.data) }
             }
-        } catch (e: Exception) {
-            setError("Error loading personal services: ${'$'}{e.message}")
-            log("homeviewmodel", "ee : ${'$'}{e.message}")
+            is DataState.Error -> {
+                showError("Failed to load personal services: ${result.exception.message}")
+            }
+            DataState.Loading -> Unit
         }
     }
 
     private suspend fun loadHomeServices() {
-        try {
-            val result = homeRepository.getHomeServices()
-            result.onSuccess { services ->
-                _state.update { it.copy(homeServices = services) }
-            }.onFailure { error ->
-                setError("Failed to load home services: ${'$'}{error.message}")
+        when (val result = homeRepository.getHomeServices()) {
+            is DataState.Success -> {
+                _uiState.update { it.copy(homeService = result.data) }
             }
-        } catch (e: Exception) {
-            setError("Error loading home services: ${'$'}{e.message}")
+            is DataState.Error -> {
+                showError("Failed to load home services: ${result.exception.message}")
+            }
+            DataState.Loading -> Unit
         }
     }
 
     private suspend fun loadTrendingServices() {
-        try {
-            val result = homeRepository.getTrendingServices()
-            result.onSuccess { services ->
-                _state.update { it.copy(trendingServices = services) }
-            }.onFailure { error ->
-                setError("Failed to load trending services: ${'$'}{error.message}")
+        when (val result = homeRepository.getTrendingServices()) {
+            is DataState.Success -> {
+                _uiState.update { it.copy(trendingService = result.data) }
             }
-        } catch (e: Exception) {
-            setError("Error loading trending services: ${'$'}{e.message}")
+            is DataState.Error -> {
+                showError("Failed to load trending services: ${result.exception.message}")
+            }
+            DataState.Loading -> Unit
         }
     }
 
-    // Optional: expose explicit commands for unit tests or imperative triggers
-    fun refreshAll() = onEvent(HomeEvent.Retry)
+    private fun showLoading() {
+        _uiState.update { it.copy(isLoading = true) }
+    }
+
+    private fun hideLoading() {
+        _uiState.update { it.copy(isLoading = false) }
+    }
+
+    private fun showError(message: String) {
+        viewModelScope.launch {
+            _effect.emit(HomeEffect.ShowMessage(message))
+        }
+    }
+
+    private fun emitEffect(effect: HomeEffect) {
+        viewModelScope.launch {
+            _effect.emit(effect)
+        }
+    }
 }

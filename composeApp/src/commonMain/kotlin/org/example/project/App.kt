@@ -26,9 +26,9 @@ fun App() {
     MaterialTheme {
         val userPreferences: UserPreferencesDataSource = koinInject()
 
-        val isLoggedIn by userPreferences.isLoggedIn.collectAsState()
+        val userData by userPreferences.userData.collectAsState()
 
-        val start = LocationFetchRoute//if (isLoggedIn) HomeRoute else OnboardingRoute
+        val start = if (userData.isLoggedIn) LocationFetchRoute else OnboardingRoute
 
         Box(modifier = Modifier.fillMaxSize()) {
             AppNavGraph(startDestination = start)

@@ -10,7 +10,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.example.project.core.resources.AppIcons
+import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_bookmark
+import dukaankonnect.composeapp.generated.resources.ic_home
+import dukaankonnect.composeapp.generated.resources.ic_person_large
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun BottomBar(
@@ -25,7 +30,7 @@ fun BottomBar(
                 onClick = { onNavigate(item.route) },
                 icon = {
                     Icon(
-                        imageVector = getIconForItem(item),
+                        painter = painterResource(item.icon),
                         contentDescription = item.label,
                         modifier = Modifier.size(24.dp)
                     )
@@ -41,11 +46,3 @@ fun BottomBar(
     }
 }
 
-@Composable
-private fun getIconForItem(item: BottomNavItem): ImageVector {
-    return when (item) {
-        is BottomNavItem.Home -> AppIcons.home
-        is BottomNavItem.Bookings -> AppIcons.bookmark
-        is BottomNavItem.Profile -> AppIcons.personLarge
-    }
-}

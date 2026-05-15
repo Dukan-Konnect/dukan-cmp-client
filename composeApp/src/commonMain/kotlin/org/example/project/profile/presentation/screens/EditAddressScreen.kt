@@ -18,7 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.example.project.core.resources.AppIcons
+import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_edit
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -67,19 +69,19 @@ fun EditAddressScreen(
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(
-                                imageVector = AppIcons.placeholder,
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = "Signal",
                                 tint = Color.Black,
                                 modifier = Modifier.size(16.dp)
                             )
                             Icon(
-                                imageVector = AppIcons.placeholder,
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = "WiFi",
                                 tint = Color.Black,
                                 modifier = Modifier.size(16.dp)
                             )
                             Icon(
-                                imageVector = AppIcons.placeholder,
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = "Battery",
                                 tint = Color.Black,
                                 modifier = Modifier.size(16.dp)
@@ -96,7 +98,7 @@ fun EditAddressScreen(
                     ) {
                         IconButton(onClick = onBack) {
                             Icon(
-                                imageVector = AppIcons.placeholder,
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = "Back",
                                 tint = Color.Black
                             )
@@ -129,7 +131,7 @@ fun EditAddressScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = AppIcons.placeholder,
+                            painter = painterResource(Res.drawable.ic_edit),
                             contentDescription = "Location",
                             tint = Color(0xFF6C4DFF),
                             modifier = Modifier.size(48.dp)
@@ -147,7 +149,7 @@ fun EditAddressScreen(
                         shape = CircleShape
                     ) {
                         Icon(
-                            imageVector = AppIcons.placeholder,
+                            painter = painterResource(Res.drawable.ic_edit),
                             contentDescription = "My Location",
                             tint = Color.Black,
                             modifier = Modifier.size(24.dp)

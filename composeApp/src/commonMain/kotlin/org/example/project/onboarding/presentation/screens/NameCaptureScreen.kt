@@ -25,27 +25,12 @@ import org.example.project.onboarding.presentation.viewmodel.NameCaptureIntent
 import org.example.project.onboarding.presentation.viewmodel.NameCaptureUiState
 import org.example.project.onboarding.presentation.viewmodel.NameCaptureViewModel
 import org.koin.compose.viewmodel.koinViewModel
-
-// ==========================================
-// 1. STATEFUL ROUTE (The Wrapper)
-// ==========================================
 @Composable
 fun NameCaptureScreen(
-    onNameConfirmed: () -> Unit,
     viewModel: NameCaptureViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Handle One-Time Navigation Effects
-    LaunchedEffect(Unit) {
-        viewModel.effect.collect { effect ->
-            when (effect) {
-                is NameCaptureEffect.NavigateToNextScreen -> onNameConfirmed()
-            }
-        }
-    }
-
-    // Auto-dismiss errors after 3 seconds
     LaunchedEffect(uiState.error) {
         if (uiState.error != null) {
             delay(3000)

@@ -31,7 +31,7 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 fun OTPScreen(
-    onAuthSuccess: (String,Boolean) -> Unit,
+    onAuthSuccess: (String) -> Unit,
     viewModel: AuthViewModel
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -39,7 +39,7 @@ fun OTPScreen(
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is AuthEffect.NavigateToNextScreen -> onAuthSuccess(uiState.phoneNumber,true)
+                is AuthEffect.NavigateToNextScreen -> onAuthSuccess(uiState.phoneNumber)
                 else -> {}
             }
         }

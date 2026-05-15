@@ -1,46 +1,61 @@
 package org.example.project.onboarding.presentation.navigation
 
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
-import androidx.navigation.toRoute
 import org.example.project.core.navigation.HomeRoute
 import org.example.project.core.navigation.OnboardingRoute
-import org.example.project.onboarding.presentation.screens.LoginScreen
 import org.example.project.onboarding.presentation.screens.LocationFetchScreenWithPermissions
+import org.example.project.onboarding.presentation.screens.LoginScreen
 import org.example.project.onboarding.presentation.screens.NameCaptureScreen
 import org.example.project.onboarding.presentation.screens.OTPScreen
 import org.example.project.onboarding.presentation.screens.OnboardingScreen
 import org.example.project.onboarding.presentation.viewmodel.AuthViewModel
 import org.koin.compose.viewmodel.koinViewModel
+import kotlinx.serialization.Serializable
 
+// --- Routes ---
 
-fun NavGraphBuilder.onboardingNavGraph(navController: NavHostController) {
+fun NavController.navigateToAuthGraph() {
+    navigate(AuthRoute) {
+        popUpTo<OnboardingRoute> { inclusive = true }
+    }
+}
+
+fun NavController.navigateToOtpScreen() = navigate(OtpRoute)
+
+fun NavController.navigateToNameCaptureScreen(phoneNumber: String) {
+    navigate(NameCaptureRoute(phoneNumber)) {
+        popUpTo<AuthRoute> { inclusive = true }
+    }
+}
+
+fun NavController.navigateToLocationFetchScreen() = navigate(LocationFetchRoute)
+
+// --- Destination Builders ---
+fun NavGraphBuilder.onboardingDestination(navController: NavController) {
     composable<OnboardingRoute> {
-        var currentPage by remember { mutableStateOf(0) }
+        var currentPage by remember { mutableIntStateOf(0) }
         OnboardingScreen(
             currentPage = currentPage,
             onNextClick = {
                 if (currentPage < 2) {
                     currentPage++
                 } else {
-                    navController.navigate(AuthRoute) {
-                        popUpTo<OnboardingRoute> { inclusive = true }
-                    }
+                    navController.navigateToAuthGraph()
                 }
             },
-            onSkipClick = {
-                navController.navigate(AuthRoute) {
-                    popUpTo<OnboardingRoute> { inclusive = true }
-                }
-            }
+            onSkipClick = navController::navigateToAuthGraph
         )
     }
+}
+
+fun NavGraphBuilder.authGraph(navController: NavController) {
     navigation<AuthRoute>(startDestination = LoginRoute) {
 
         composable<LoginRoute> { backStackEntry ->
@@ -51,9 +66,7 @@ fun NavGraphBuilder.onboardingNavGraph(navController: NavHostController) {
 
             LoginScreen(
                 viewModel = sharedViewModel,
-                onNavigateToOtp = {
-                    navController.navigate(OtpRoute)
-                }
+                onNavigateToOtp = navController::navigateToOtpScreen
             )
         }
 
@@ -65,31 +78,21 @@ fun NavGraphBuilder.onboardingNavGraph(navController: NavHostController) {
 
             OTPScreen(
                 viewModel = sharedViewModel,
-                onAuthSuccess = { phoneNumber,isNewUser ->
-                    if(isNewUser) {
-                        navController.navigate(NameCaptureRoute(phoneNumber)) {
-                            popUpTo<AuthRoute> { inclusive = true }
-                        }
-                    } else {
-                        navController.navigate(HomeRoute) {
-                            popUpTo<AuthRoute> { inclusive = true }
-                        }
-                    }
+                onAuthSuccess = { phoneNumber ->
+                    navController.navigateToNameCaptureScreen(phoneNumber)
                 }
             )
         }
     }
+}
 
+fun NavGraphBuilder.nameCaptureDestination() {
     composable<NameCaptureRoute> {
-        NameCaptureScreen(
-            onNameConfirmed = {
-                navController.navigate(LocationFetchRoute) {
-                    popUpTo<NameCaptureRoute> { inclusive = true }
-                }
-            }
-        )
+        NameCaptureScreen()
     }
+}
 
+fun NavGraphBuilder.locationFetchDestination(navController: NavController) {
     composable<LocationFetchRoute> {
         LocationFetchScreenWithPermissions(
             onLocationFetched = {
@@ -99,4 +102,12 @@ fun NavGraphBuilder.onboardingNavGraph(navController: NavHostController) {
             }
         )
     }
+}
+
+// --- Main Graph Assembly ---
+fun NavGraphBuilder.onboardingNavGraph(navController: NavController) {
+    onboardingDestination(navController)
+    authGraph(navController)
+    nameCaptureDestination()
+    locationFetchDestination(navController)
 }

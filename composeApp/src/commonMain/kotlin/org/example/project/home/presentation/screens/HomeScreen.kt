@@ -1,5 +1,8 @@
 package org.example.project.home.presentation.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,53 +31,56 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_location
+import dukaankonnect.composeapp.generated.resources.ic_search
 import dukaankonnect.composeapp.generated.resources.manv
-import org.example.project.core.log
-import org.example.project.home.domain.model.Banner
-import org.example.project.home.domain.model.Service
-import org.example.project.home.domain.model.ServiceCategory
-import org.example.project.home.domain.model.UserLocation
+import org.example.project.core.model.home.Banner
+import org.example.project.core.model.home.Service
+import org.example.project.core.network.dto.home.ServiceCategory
 import org.example.project.home.presentation.viewmodels.HomeEffect
-import org.example.project.home.presentation.viewmodels.HomeEvent
+import org.example.project.home.presentation.viewmodels.HomeIntent
 import org.example.project.home.presentation.viewmodels.HomeUiState
 import org.example.project.home.presentation.viewmodels.HomeViewModel
-import org.example.project.core.resources.AppIcons
 import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
-import org.example.project.home.utils.AddressFormatter
-import org.jetbrains.compose.resources.painterResource
+import org.example.project.core.utils.AddressFormatter
 
 @Composable
 fun HomeScreen(
-    onProfileClick: () -> Unit = {},
-    onBookingClick: () -> Unit = {},
     onServiceClick: (Int) -> Unit = {},
+    onLocationClick: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
-
-    val uiState by viewModel.state.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Collect one-off effects
     LaunchedEffect(viewModel) {
-
         viewModel.effect.collect { effect ->
             when (effect) {
                 is HomeEffect.NavigateToService -> {
                     onServiceClick(effect.id)
-                    log("servicedetails","id = ${effect.id}")
                 }
-                HomeEffect.OpenLocationPicker -> { /* TODO open picker */ }
+                HomeEffect.OpenLocationPicker -> {
+                    onLocationClick()
+                }
                 HomeEffect.OpenBanner -> { /* TODO open banner destination */ }
-                is HomeEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
+                is HomeEffect.ShowMessage -> {
+                    val result = snackbarHostState.showSnackbar(
+                        message = effect.message,
+                        actionLabel = "Retry",
+                        duration = SnackbarDuration.Short
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        viewModel.handleIntent(HomeIntent.Retry)
+                    }
+                }
             }
         }
     }
 
-    // Forward intents directly to the ViewModel reducer
-    val intent: (HomeEvent) -> Unit = viewModel::onEvent
-
+    val intent: (HomeIntent) -> Unit = viewModel::handleIntent
     HomeScreenContent(
         uiState = uiState,
         intent = intent,
@@ -86,7 +92,7 @@ fun HomeScreen(
 @Composable
 fun HomeScreenContent(
     uiState: HomeUiState,
-    intent: (HomeEvent) -> Unit,
+    intent: (HomeIntent) -> Unit,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     Box(
@@ -94,29 +100,12 @@ fun HomeScreenContent(
             .fillMaxSize()
             .background(Color(0xFFF7F7F7))
     ) {
-        // Loading
         if (uiState.isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center)
             )
         }
 
-        // Error state snackbar inline (state-driven)
-        uiState.errorMessage?.let { error ->
-            Snackbar(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp),
-                action = {
-                    TextButton(onClick = { intent(HomeEvent.Retry) }) { Text("Retry") }
-                },
-                dismissAction = {
-                    TextButton(onClick = { intent(HomeEvent.ErrorDismissed) }) { Text("Dismiss") }
-                }
-            ) { Text(error) }
-        }
-
-        // Optional host for effect-based messages
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
@@ -130,30 +119,28 @@ fun HomeScreenContent(
                 .padding(8.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Top Bar with Status Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = Color.White,
                 shadowElevation = 2.dp
             ) {
                 Column {
-                    // Location Row
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { intent(HomeEvent.LocationClicked) }
+                            .clickable { intent(HomeIntent.LocationClicked) }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = AppIcons.location,
+                            painter = painterResource(Res.drawable.ic_location),
                             contentDescription = "Location",
                             tint = Color.Black,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            AddressFormatter.formatShortAddress(uiState.savedAddress ?: uiState.userLocation?.address),
+                            text = AddressFormatter.formatShortAddress(uiState.userLocation ?: "No location set"),
                             fontSize = 14.sp,
                             color = Color.Black,
                             fontWeight = FontWeight.Medium,
@@ -161,26 +148,26 @@ fun HomeScreenContent(
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                    // Search Bar: editable TextField bound to uiState
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
                             .padding(horizontal = 4.dp)
-
                     ) {
                         TextField(
                             value = uiState.searchQuery,
-                            onValueChange = { intent(HomeEvent.SearchQueryChanged(it)) },
+                            onValueChange = { intent(HomeIntent.SearchQueryChanged(it)) },
+                            enabled = uiState.isSearchEnabled,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(Color.White),
-                            placeholder = { Text("Search for services and packages", fontSize = 14.sp) },
+                            placeholder = { Text(if (uiState.isSearchEnabled) "Search for services and packages" else "Loading services...", fontSize = 14.sp) },
                             textStyle = TextStyle(fontSize = 14.sp),
                             leadingIcon = {
                                 Icon(
-                                    imageVector = AppIcons.search,
+                                    painter = painterResource(Res.drawable.ic_search),
                                     contentDescription = "Search",
                                     tint = Color.Gray,
                                     modifier = Modifier.size(24.dp)
@@ -193,95 +180,128 @@ fun HomeScreenContent(
                                 disabledIndicatorColor = Color.Transparent,
                                 focusedContainerColor = Color.White,
                                 unfocusedContainerColor = Color.White,
-                                disabledContainerColor = Color.White,
+                                disabledContainerColor = Color(0xFFF0F0F0), // Slight grey tint when disabled
                             )
                         )
                     }
 
+
+                    AnimatedVisibility(
+                        visible = uiState.searchQuery.isNotBlank(),
+                        enter = expandVertically(),
+                        exit = shrinkVertically()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFF9F9F9))
+                                .padding(vertical = 12.dp)
+                        ) {
+                            Text(
+                                text = "Search Results",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+
+                            if (uiState.searchResults.isNotEmpty()) {
+                                LazyRow(
+                                    contentPadding = PaddingValues(horizontal = 12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(uiState.searchResults) { service ->
+                                        ServiceItem(
+                                            service = service,
+                                            onClick = { intent(HomeIntent.ServiceClicked(service.id)) },
+                                            modifier = Modifier.width(90.dp)
+                                        )
+                                    }
+                                }
+                            } else {
+                                Text(
+                                    text = "No services found for \"${uiState.searchQuery}\"",
+                                    fontSize = 14.sp,
+                                    color = Color.Black,
+                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                )
+                            }
+                        }
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
 
-            // Banner Card
-            uiState.banner?.let { bannerData ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = { intent(HomeEvent.BannerClicked) }),
-                    // shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF6C4DFF))
-                ) {
-                    Box(
+            if (uiState.searchQuery.isBlank()) {
+                uiState.banner?.let { bannerData ->
+                    Card(
                         modifier = Modifier
-                            .fillMaxSize()
-
+                            .fillMaxWidth()
+                            .padding(top = 16.dp)
+                            .clickable(onClick = { intent(HomeIntent.BannerClicked) }),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF6C4DFF))
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .align(Alignment.CenterStart),
-                            verticalAlignment = Alignment.CenterVertically
+                        Box(
+                            modifier = Modifier.fillMaxSize()
                         ) {
-                            Text(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(16.dp),
-                                text = bannerData.title,
-                                color = Color.White,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                lineHeight = 24.sp
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Row(
+                                modifier = Modifier.align(Alignment.CenterStart),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(16.dp),
+                                    text = bannerData.title,
+                                    color = Color.White,
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    lineHeight = 24.sp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
 
-                            // Banner image
-                            Image(
-                                painter = painterResource(Res.drawable.manv),
-                                contentDescription = "Banner Image",
-                                modifier = Modifier
-                                    .height(100.dp)
-                                    .width(80.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-                                contentScale = ContentScale.Crop
-                            )
+                                Image(
+                                    painter = painterResource(Res.drawable.manv),
+                                    contentDescription = "Banner Image",
+                                    modifier = Modifier
+                                        .height(100.dp)
+                                        .width(80.dp)
+                                        .clip(RoundedCornerShape(8.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            // Personal Services Section
-            if (uiState.personalServices.isNotEmpty()) {
-                ServiceSection(
-                    title = "Personal Services",
-                    services = uiState.personalServices,
-                    onServiceClick = { id -> intent(HomeEvent.ServiceClicked(id)) }
-                )
+                if (uiState.personalService.isNotEmpty()) {
+                    ServiceSection(
+                        title = "Personal Services",
+                        services = uiState.personalService,
+                        onServiceClick = { id -> intent(HomeIntent.ServiceClicked(id)) }
+                    )
+                }
 
-            }
+                if (uiState.homeService.isNotEmpty()) {
+                    ServiceSection(
+                        title = "Home Services",
+                        services = uiState.homeService,
+                        onServiceClick = { id -> intent(HomeIntent.ServiceClicked(id)) }
+                    )
+                }
 
-            // Home Services Section
-            if (uiState.homeServices.isNotEmpty()) {
-                ServiceSection(
-                    title = "Home Services",
-                    services = uiState.homeServices,
-                    onServiceClick = { id -> intent(HomeEvent.ServiceClicked(id)) }
-                )
-
-            }
-
-            // Trending Services Section
-            if (uiState.trendingServices.isNotEmpty()) {
-                ServiceSection(
-                    title = "Trending Services",
-                    services = uiState.trendingServices,
-                    onServiceClick = { id -> intent(HomeEvent.ServiceClicked(id)) }
-                )
-
+                if (uiState.trendingService.isNotEmpty()) {
+                    ServiceSection(
+                        title = "Trending Services",
+                        services = uiState.trendingService,
+                        onServiceClick = { id -> intent(HomeIntent.ServiceClicked(id)) }
+                    )
+                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun ServiceSection(
     title: String,
@@ -296,11 +316,11 @@ fun ServiceSection(
             .padding(vertical = 16.dp)
     ) {
         Text(
-            title,
+            text = title,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Black,
-            modifier = Modifier.padding(bottom = 8.dp,start = 16.dp)
+            modifier = Modifier.padding(bottom = 8.dp, start = 16.dp)
         )
 
         val itemSpacing = Arrangement.spacedBy(2.dp)
@@ -323,7 +343,6 @@ fun ServiceSection(
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun ServiceItem(
     service: Service,
@@ -332,15 +351,13 @@ fun ServiceItem(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
-            .clickable(onClick = onClick)
-
+        modifier = modifier.clickable(onClick = onClick)
     ) {
         Box(
             modifier = Modifier
                 .size(75.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color.White), // white background to cover transparent icons
+                .background(Color.White),
             contentAlignment = Alignment.Center
         ) {
             AsyncImage(
@@ -354,7 +371,7 @@ fun ServiceItem(
         }
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            service.name,
+            text = service.name,
             fontSize = 12.sp,
             color = Color.Black,
             textAlign = TextAlign.Center,
@@ -365,25 +382,24 @@ fun ServiceItem(
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
 @Preview
 @Composable
 fun HomeScreenPreview() {
     val dummyServices = listOf(
-        Service(id = 1, name = "Electrical Plumbing", icon = "ic_electrical.xml", ServiceCategory.HOME),
-        Service(id = 2, name = "Cleaning & Pest", icon = "ic_cleaning.xml",ServiceCategory.HOME),
-        Service(id = 3, name = "Home repairs", icon = "ic_home_repairs.xml",ServiceCategory.HOME),
-        Service(id = 4, name = "Home Painting", icon = "ic_painting.xml",ServiceCategory.HOME),
-        Service(id = 5, name = "Salon for Women", icon = "ic_salon_women.xml",ServiceCategory.HOME)
+        Service(id = 1, name = "Electrical Plumbing", icon = "ic_electrical.xml", category = ServiceCategory.HOME),
+        Service(id = 2, name = "Cleaning & Pest", icon = "ic_cleaning.xml", category = ServiceCategory.HOME),
+        Service(id = 3, name = "Home repairs", icon = "ic_home_repairs.xml", category = ServiceCategory.HOME),
+        Service(id = 4, name = "Home Painting", icon = "ic_painting.xml", category = ServiceCategory.HOME),
+        Service(id = 5, name = "Salon for Women", icon = "ic_salon_women.xml", category = ServiceCategory.HOME)
     )
 
     val previewState = HomeUiState(
         isLoading = false,
-        userLocation = UserLocation("Kavuri Hills, Madhapur"),
-        banner = Banner(1, "Let’s make a package just for you, Manvi!", "","",""),
-        personalServices = dummyServices,
-        homeServices = dummyServices.take(4),
-        trendingServices = dummyServices.shuffled(),
+        userLocation = "Kavuri Hills, Madhapur",
+        banner = Banner(1, "Let’s make a package just for you, Manvi!", "", "", ""),
+        personalService = dummyServices,
+        homeService = dummyServices.take(4),
+        trendingService = dummyServices.shuffled(),
         searchQuery = ""
     )
 

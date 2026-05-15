@@ -9,16 +9,28 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.example.project.core.resources.AppIcons
+import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_address
+import dukaankonnect.composeapp.generated.resources.ic_arrow_forward
+import dukaankonnect.composeapp.generated.resources.ic_edit
+import dukaankonnect.composeapp.generated.resources.ic_info
+import dukaankonnect.composeapp.generated.resources.ic_logout
+import dukaankonnect.composeapp.generated.resources.ic_person_large
+import dukaankonnect.composeapp.generated.resources.ic_share
+import dukaankonnect.composeapp.generated.resources.ic_star
 import org.example.project.home.presentation.viewmodels.ProfileViewModel
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,7 +83,7 @@ fun ProfileScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = AppIcons.personLarge,
+                        painter = painterResource(Res.drawable.ic_person_large),
                         contentDescription = "Profile",
                         modifier = Modifier.size(40.dp),
                         tint = Color(0xFF6C4DFF)
@@ -108,7 +120,7 @@ fun ProfileScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = AppIcons.edit,
+                        painter = painterResource(Res.drawable.ic_edit),
                         contentDescription = "Edit",
                         tint = Color.White,
                         modifier = Modifier.size(20.dp)
@@ -120,7 +132,7 @@ fun ProfileScreen(
 
             // Menu Items
             ProfileMenuItem(
-                icon = AppIcons.address,
+                icon = Res.drawable.ic_address,
                 title = "Manage Address",
                 onClick = { /* TODO */ }
             )
@@ -132,7 +144,7 @@ fun ProfileScreen(
             )
 
             ProfileMenuItem(
-                icon = AppIcons.share,
+                icon = Res.drawable.ic_share,
                 title = "Refer & Earn",
                 onClick = { /* TODO */ }
             )
@@ -144,7 +156,7 @@ fun ProfileScreen(
             )
 
             ProfileMenuItem(
-                icon = AppIcons.star,
+                icon = Res.drawable.ic_star,
                 title = "Rate us",
                 onClick = { /* TODO */ }
             )
@@ -156,19 +168,19 @@ fun ProfileScreen(
             )
 
             ProfileMenuItem(
-                icon = AppIcons.info,
+                icon = Res.drawable.ic_info,
                 title = "About DukanKonnect",
                 onClick = { /* TODO */ }
             )
 
-            Divider(
+            HorizontalDivider(
                 modifier = Modifier.padding(horizontal = 20.dp),
-                color = Color(0xFFE0E0E0),
-                thickness = 1.dp
+                thickness = 1.dp,
+                color = Color(0xFFE0E0E0)
             )
 
             ProfileMenuItem(
-                icon = AppIcons.logout,
+                icon = Res.drawable.ic_logout,
                 title = "Logout",
                 onClick = { /* TODO */ }
             )
@@ -180,7 +192,7 @@ fun ProfileScreen(
 
 @Composable
 fun ProfileMenuItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: DrawableResource,
     title: String,
     onClick: () -> Unit
 ) {
@@ -192,7 +204,7 @@ fun ProfileMenuItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = icon,
+            painter = painterResource(icon),
             contentDescription = title,
             tint = Color.Black,
             modifier = Modifier.size(24.dp)
@@ -208,7 +220,7 @@ fun ProfileMenuItem(
         )
 
         Icon(
-            imageVector = AppIcons.arrowForward,
+            painter = painterResource(Res.drawable.ic_arrow_forward),
             contentDescription = "Navigate",
             tint = Color.Gray,
             modifier = Modifier.size(20.dp)

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.example.project.core.utils.AddressFormatter
 import org.example.project.home.domain.model.CartItem
 import org.example.project.home.domain.model.CartSummary
 import org.example.project.home.domain.model.CartTotals
@@ -268,7 +269,7 @@ class SummaryViewModel(
                         totalAmountCents = cartItem.totalPriceCents,
                         bookingDate = currentTime,
                         scheduledDate = summary?.timeSlot,
-                        address = summary?.address?.let { org.example.project.home.utils.AddressFormatter.formatFullAddress(it) },
+                        address = summary?.address?.let { AddressFormatter.formatFullAddress(it) },
                         status = org.example.project.home.domain.model.BookingStatus.CONFIRMED,
                         paymentStatus = org.example.project.home.domain.model.PaymentStatus.PAID
                     )

@@ -18,7 +18,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.example.project.core.resources.AppIcons
+import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_arrow_back
+import dukaankonnect.composeapp.generated.resources.ic_edit
+import dukaankonnect.composeapp.generated.resources.ic_search
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
@@ -62,13 +66,13 @@ fun MakeYourOwnPackageScreen(
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(
-                                imageVector = AppIcons.signal,
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = "Signal",
                                 tint = Color.Black,
                                 modifier = Modifier.size(16.dp)
                             )
                             Icon(
-                                imageVector = AppIcons.battery,
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = "Battery",
                                 tint = Color.Black,
                                 modifier = Modifier.size(16.dp)
@@ -85,7 +89,7 @@ fun MakeYourOwnPackageScreen(
                     ) {
                         IconButton(onClick = onBack) {
                             Icon(
-                                imageVector = AppIcons.arrowBack,
+                                painter = painterResource(Res.drawable.ic_arrow_back),
                                 contentDescription = "Back",
                                 tint = Color.Black
                             )
@@ -112,7 +116,7 @@ fun MakeYourOwnPackageScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = AppIcons.search,
+                                painter = painterResource(Res.drawable.ic_search),
                                 contentDescription = "Search",
                                 tint = Color.Gray,
                                 modifier = Modifier.size(20.dp)
@@ -180,7 +184,7 @@ fun MakeYourOwnPackageScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
-                                    imageVector = AppIcons.placeholder,
+                                    painter = painterResource(Res.drawable.ic_edit),
                                     contentDescription = "Package",
                                     tint = Color.White,
                                     modifier = Modifier.size(28.dp)
@@ -218,7 +222,7 @@ fun MakeYourOwnPackageScreen(
                             }
                         }
                         Icon(
-                            imageVector = AppIcons.placeholder,
+                            painter = painterResource(Res.drawable.ic_edit),
                             contentDescription = "Arrow",
                             tint = Color.Gray,
                             modifier = Modifier.size(20.dp)
@@ -254,7 +258,7 @@ fun MakeYourOwnPackageScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = AppIcons.placeholder,
+                                        painter = painterResource(Res.drawable.ic_edit),
                                         contentDescription = "Package",
                                         tint = Color.White,
                                         modifier = Modifier.size(28.dp)
@@ -271,7 +275,7 @@ fun MakeYourOwnPackageScreen(
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(
-                                            imageVector = AppIcons.placeholder,
+                                            painter = painterResource(Res.drawable.ic_edit),
                                             contentDescription = "Rating",
                                             tint = Color(0xFFFFA000),
                                             modifier = Modifier.size(12.dp)
@@ -421,7 +425,7 @@ fun MakeYourOwnPackageScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
-                    imageVector = AppIcons.placeholder,
+                    painter = painterResource(Res.drawable.ic_edit),
                     contentDescription = "Menu",
                     tint = Color.White,
                     modifier = Modifier.size(20.dp)
@@ -482,7 +486,7 @@ fun ServiceItemSimple(
         verticalAlignment = Alignment.Top
     ) {
         Image(
-            imageVector = AppIcons.placeholder,
+            painter = painterResource(Res.drawable.ic_edit),
             contentDescription = title,
             modifier = Modifier
                 .size(80.dp)
@@ -500,7 +504,7 @@ fun ServiceItemSimple(
             Spacer(modifier = Modifier.height(4.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = AppIcons.placeholder,
+                    painter = painterResource(Res.drawable.ic_edit),
                     contentDescription = "Rating",
                     tint = Color(0xFFFFA000),
                     modifier = Modifier.size(12.dp)

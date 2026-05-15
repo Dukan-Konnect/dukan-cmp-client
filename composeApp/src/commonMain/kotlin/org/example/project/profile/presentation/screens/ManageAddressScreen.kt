@@ -14,7 +14,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import org.example.project.core.resources.AppIcons
+import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_edit
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 data class Address(
@@ -64,19 +66,19 @@ fun ManageAddressScreen(
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(
-                                imageVector = AppIcons.placeholder,
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = "Signal",
                                 tint = Color.Black,
                                 modifier = Modifier.size(16.dp)
                             )
                             Icon(
-                                imageVector = AppIcons.placeholder,
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = "WiFi",
                                 tint = Color.Black,
                                 modifier = Modifier.size(16.dp)
                             )
                             Icon(
-                                imageVector = AppIcons.placeholder,
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = "Battery",
                                 tint = Color.Black,
                                 modifier = Modifier.size(16.dp)
@@ -93,7 +95,7 @@ fun ManageAddressScreen(
                     ) {
                         IconButton(onClick = onBack) {
                             Icon(
-                                imageVector = AppIcons.placeholder,
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = "Back",
                                 tint = Color.Black
                             )
@@ -123,7 +125,7 @@ fun ManageAddressScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = AppIcons.placeholder,
+                        painter = painterResource(Res.drawable.ic_edit),
                         contentDescription = "Add",
                         tint = Color(0xFF6C4DFF),
                         modifier = Modifier.size(20.dp)
@@ -273,7 +275,7 @@ fun AddressCard(
                             modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
-                                imageVector = AppIcons.placeholder,
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = "More",
                                 tint = Color.Gray,
                                 modifier = Modifier.size(20.dp)
@@ -299,7 +301,7 @@ fun AddressCard(
                                 },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = AppIcons.placeholder,
+                                        painter = painterResource(Res.drawable.ic_edit),
                                         contentDescription = "Edit",
                                         tint = Color.Gray,
                                         modifier = Modifier.size(20.dp)
@@ -320,7 +322,7 @@ fun AddressCard(
                                 },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = AppIcons.placeholder,
+                                        painter = painterResource(Res.drawable.ic_edit),
                                         contentDescription = "Delete",
                                         tint = Color.Red,
                                         modifier = Modifier.size(20.dp)
