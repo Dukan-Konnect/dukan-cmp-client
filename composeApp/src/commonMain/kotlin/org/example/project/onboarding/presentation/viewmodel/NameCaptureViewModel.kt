@@ -30,16 +30,16 @@ class NameCaptureViewModel(
             is NameCaptureIntent.NameChanged -> updateName(intent.name)
             is NameCaptureIntent.EmailChanged -> updateEmail(intent.email)
             is NameCaptureIntent.SubmitClicked -> submitProfile()
-            is NameCaptureIntent.ErrorDismissed -> clearError()
+            is NameCaptureIntent.DismissDialog -> clearDialog()
         }
     }
 
     private fun updateName(name: String) {
-        _uiState.update { it.copy(name = name, error = null) }
+        _uiState.update { it.copy(name = name) }
     }
 
     private fun updateEmail(email: String) {
-        _uiState.update { it.copy(email = email, error = null) }
+        _uiState.update { it.copy(email = email) }
     }
 
     private fun submitProfile() {
@@ -62,7 +62,10 @@ class NameCaptureViewModel(
             when (val result = profileRepository.updateNameAndEmail(currentName, currentEmail, phoneNumber)) {
                 is DataState.Success<*> -> {
                     hideLoading()
+                    prefRepository.updateName(currentName)
+                    prefRepository.updatePhoneNumber(phoneNumber)
                     prefRepository.setLoggedIn(true)
+
                 }
                 is DataState.Error -> {
                     showError(result.exception.message ?: "Failed to save profile")
@@ -74,20 +77,20 @@ class NameCaptureViewModel(
         }
     }
 
-    private fun clearError() {
-        _uiState.update { it.copy(error = null) }
+    private fun clearDialog() {
+        _uiState.update { it.copy(dialogState = null) }
     }
 
     private fun showLoading() {
-        _uiState.update { it.copy(isLoading = true, error = null) }
+        _uiState.update { it.copy(dialogState = NameCaptureUiState.DialogState.Loading) }
     }
 
     private fun hideLoading() {
-        _uiState.update { it.copy(isLoading = false) }
+        _uiState.update { it.copy(dialogState = null) }
     }
 
     private fun showError(message: String) {
-        _uiState.update { it.copy(isLoading = false, error = message) }
+        _uiState.update { it.copy(dialogState = NameCaptureUiState.DialogState.Error(message)) }
     }
 
     private val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[a-zA-z]{2,}\$".toRegex()
@@ -97,7 +100,7 @@ sealed class NameCaptureIntent {
     data class NameChanged(val name: String) : NameCaptureIntent()
     data class EmailChanged(val email: String) : NameCaptureIntent()
     data object SubmitClicked : NameCaptureIntent()
-    data object ErrorDismissed : NameCaptureIntent()
+    data object DismissDialog : NameCaptureIntent()
 }
 
 sealed class NameCaptureEffect {
@@ -107,6 +110,10 @@ sealed class NameCaptureEffect {
 data class NameCaptureUiState(
     val name: String = "",
     val email: String = "",
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
+    val dialogState: DialogState? = null
+) {
+    sealed interface DialogState {
+        data class Error(val message: String) : DialogState
+        data object Loading : DialogState
+    }
+}

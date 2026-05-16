@@ -45,6 +45,30 @@ class UserPreferencesDataSource(
         }
     }
 
+    suspend fun updateName(newName: String) {
+        val updatedData = userData.value.copy(name = newName)
+        updateUserData(updatedData)
+    }
+
+    suspend fun updatePhoneNumber(newPhone: String) {
+        val updatedData = userData.value.copy(phoneNumber = newPhone)
+        updateUserData(updatedData)
+    }
+
+    suspend fun updateAddress(newAddress: String) {
+        val updatedData = userData.value.copy(address = newAddress)
+        updateUserData(updatedData)
+    }
+
+    suspend fun updateToken(newToken: String) {
+        val updatedData = userData.value.copy(token = newToken)
+        updateUserData(updatedData)
+    }
+
+    suspend fun setLoggedIn(isLoggedIn: Boolean) {
+        val updatedData = userData.value.copy(isLoggedIn = isLoggedIn)
+        updateUserData(updatedData)
+    }
     suspend fun clearUserData() {
         withContext(Dispatchers.IO) {
             val defaultData = UserData.DEFAULT
@@ -57,36 +81,4 @@ class UserPreferencesDataSource(
         }
     }
 
-    suspend fun saveToken(token: String) {
-        // 1. Get the current user data
-        val currentData = userData.value
-
-        // 2. Create a copy with ONLY the isLoggedIn value changed
-        val updatedData = currentData.copy(token = token)
-
-        // 3. Save the new object
-        updateUserData(updatedData)
-    }
-
-    suspend fun updateAddress(address: String) {
-        // 1. Get the current user data
-        val currentData = userData.value
-
-        // 2. Create a copy with ONLY the isLoggedIn value changed
-        val updatedData = currentData.copy(address = address)
-
-        // 3. Save the new object
-        updateUserData(updatedData)
-    }
-
-    suspend fun setLoggedIn(isLoggedIn: Boolean) {
-        // 1. Get the current user data
-        val currentData = userData.value
-
-        // 2. Create a copy with ONLY the isLoggedIn value changed
-        val updatedData = currentData.copy(isLoggedIn = isLoggedIn)
-
-        // 3. Save the new object
-        updateUserData(updatedData)
-    }
 }

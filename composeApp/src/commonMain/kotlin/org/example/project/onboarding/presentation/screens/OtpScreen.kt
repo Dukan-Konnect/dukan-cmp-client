@@ -22,7 +22,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 import org.example.project.onboarding.presentation.viewmodel.AuthEffect
 import org.example.project.onboarding.presentation.viewmodel.AuthIntent
 import org.example.project.onboarding.presentation.viewmodel.AuthUiState
@@ -38,25 +37,23 @@ fun OTPScreen(
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
-            when (effect) {
-                is AuthEffect.NavigateToNextScreen -> onAuthSuccess(uiState.phoneNumber)
-                else -> {}
+            if (effect is AuthEffect.NavigateToNextScreen) {
+                onAuthSuccess(uiState.phoneNumber)
             }
         }
     }
 
+    Box(modifier = Modifier.fillMaxSize()) {
+        OTPContent(
+            uiState = uiState,
+            onAction = { intent -> viewModel.handleIntent(intent) }
+        )
 
-    LaunchedEffect(uiState.error) {
-        if (uiState.error != null) {
-            delay(3000)
-            viewModel.handleIntent(AuthIntent.ErrorDismissed)
-        }
+        AuthDialogs(
+            dialogState = uiState.dialogState,
+            onDismiss = { viewModel.handleIntent(AuthIntent.DismissDialog) }
+        )
     }
-
-    OTPContent(
-        uiState = uiState,
-        onAction = { intent -> viewModel.handleIntent(intent) }
-    )
 }
 
 @Composable
@@ -64,6 +61,7 @@ fun OTPContent(
     uiState: AuthUiState,
     onAction: (AuthIntent) -> Unit
 ) {
+    val isLoading = uiState.dialogState == AuthUiState.DialogState.Loading
     val otpString = uiState.otp
     val otpDigits = remember(otpString) {
         List(6) { index -> otpString.getOrNull(index)?.toString() ?: "" }
@@ -122,21 +120,9 @@ fun OTPContent(
                     },
                     focusRequester = focusRequesters.getOrNull(index) ?: FocusRequester(),
                     modifier = Modifier.weight(1f),
-                    enabled = !uiState.isLoading
+                    enabled = !isLoading
                 )
             }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        if (uiState.error != null) {
-            Text(
-                text = uiState.error,
-                fontSize = 12.sp,
-                color = Color.Red,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -144,13 +130,11 @@ fun OTPContent(
         Button(
             onClick = { onAction(AuthIntent.VerifyOtpClicked) },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4A6CF7)
-            ),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A6CF7)),
             shape = RoundedCornerShape(8.dp),
-            enabled = otpString.length == 6 && !uiState.isLoading
+            enabled = otpString.length == 6 && !isLoading
         ) {
-            if (uiState.isLoading) {
+            if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
                     color = Color.White,
@@ -170,8 +154,8 @@ fun OTPContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         TextButton(
-            onClick = { onAction(AuthIntent.SendOtpClicked) }, // HOISTED
-            enabled = !uiState.isLoading
+            onClick = { onAction(AuthIntent.SendOtpClicked) },
+            enabled = !isLoading
         ) {
             Text(
                 text = "Resend Code",

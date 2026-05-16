@@ -15,12 +15,25 @@ class UserPreferencesRepositoryImpl(
         localDataSource.updateUserData(userData)
     }
 
-    override suspend fun saveToken(token : String){
-        localDataSource.saveToken(token)
+
+    override suspend fun updateName(name: String) {
+        localDataSource.updateName(name)
+    }
+
+    override suspend fun updatePhoneNumber(phoneNumber: String) {
+        localDataSource.updatePhoneNumber(phoneNumber)
     }
 
     override suspend fun updateAddress(address: String) {
         localDataSource.updateAddress(address)
+    }
+
+    override suspend fun updateToken(token: String) {
+        localDataSource.updateToken(token)
+    }
+
+    override suspend fun setLoggedIn(isLoggedIn: Boolean) {
+        localDataSource.setLoggedIn(isLoggedIn)
     }
 
     override suspend fun logOut() {
@@ -31,8 +44,5 @@ class UserPreferencesRepositoryImpl(
         return localDataSource.userData
     }
 
-    // Add this implementation
-    override suspend fun setLoggedIn(isLoggedIn: Boolean) {
-        localDataSource.setLoggedIn(isLoggedIn)
-    }
+
 }

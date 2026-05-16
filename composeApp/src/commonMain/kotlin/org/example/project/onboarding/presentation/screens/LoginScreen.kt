@@ -18,7 +18,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dukaankonnect.composeapp.generated.resources.*
-import kotlinx.coroutines.delay
 import org.example.project.onboarding.presentation.viewmodel.AuthEffect
 import org.example.project.onboarding.presentation.viewmodel.AuthIntent
 import org.example.project.onboarding.presentation.viewmodel.AuthUiState
@@ -30,38 +29,62 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun LoginScreen(
     onNavigateToOtp: () -> Unit,
-    viewModel: AuthViewModel
+    viewModel: AuthViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.effect.collect { effect ->
-            when (effect) {
-                is AuthEffect.NavigateToOtpScreen -> onNavigateToOtp()
-                else -> {}
+            if (effect is AuthEffect.NavigateToOtpScreen) {
+                onNavigateToOtp()
             }
         }
     }
 
-    LaunchedEffect(uiState.error) {
-        if (uiState.error != null) {
-            delay(3000)
-            viewModel.handleIntent(AuthIntent.ErrorDismissed)
-        }
-    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        LoginContent(
+            uiState = uiState,
+            onAction = { intent -> viewModel.handleIntent(intent) }
+        )
 
-    LoginContent(
-        uiState = uiState,
-        onAction = { intent -> viewModel.handleIntent(intent) }
-    )
+        // Unified Dialog rendering
+        AuthDialogs(
+            dialogState = uiState.dialogState,
+            onDismiss = { viewModel.handleIntent(AuthIntent.DismissDialog) }
+        )
+    }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AuthDialogs(
+    dialogState: AuthUiState.DialogState?,
+    onDismiss: () -> Unit
+) {
+    when (dialogState) {
+        is AuthUiState.DialogState.Error -> {
+            AlertDialog(
+                onDismissRequest = onDismiss,
+                title = { Text(text = "Authentication Error") },
+                text = { Text(text = dialogState.message) },
+                confirmButton = {
+                    TextButton(onClick = onDismiss) {
+                        Text("OK", color = Color(0xFF4A6CF7))
+                    }
+                },
+                containerColor = Color.White
+            )
+        }
+        else -> Unit // Loading is handled directly on the button for better UX
+    }
+}
+
 @Composable
 fun LoginContent(
     uiState: AuthUiState,
     onAction: (AuthIntent) -> Unit
 ) {
+    val isLoading = uiState.dialogState == AuthUiState.DialogState.Loading
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -116,29 +139,16 @@ fun LoginContent(
                 onValueChange = { onAction(AuthIntent.PhoneNumberChanged(it)) },
                 label = { Text("Mobile Number") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                modifier = Modifier
-                    .weight(1f),
+                modifier = Modifier.weight(1f),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color(0xFF4A6CF7),
                     focusedLabelColor = Color(0xFF4A6CF7)
                 ),
-                enabled = !uiState.isLoading
+                enabled = !isLoading
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        if (uiState.error != null) {
-            Text(
-                text = uiState.error,
-                fontSize = 12.sp,
-                color = Color.Red,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
         Text(
             text = "We will use your phone number for verification\npurpose. For this we will send you OTP.",
@@ -155,9 +165,9 @@ fun LoginContent(
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A6CF7)),
             shape = RoundedCornerShape(8.dp),
-            enabled = uiState.phoneNumber.length == 10 && !uiState.isLoading
+            enabled = uiState.phoneNumber.length == 10 && !isLoading
         ) {
-            if (uiState.isLoading) {
+            if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),
                     color = Color.White,
@@ -175,27 +185,5 @@ fun LoginContent(
         }
 
         Spacer(modifier = Modifier.weight(1f))
-    }
-}
-
-@Preview
-@Composable
-fun LoginScreenPreview() {
-    MaterialTheme {
-        LoginContent(
-            uiState = AuthUiState(phoneNumber = "1234567890", isLoading = false),
-            onAction = {}
-        )
-    }
-}
-
-@Preview
-@Composable
-fun LoginScreenLoadingPreview() {
-    MaterialTheme {
-        LoginContent(
-            uiState = AuthUiState(phoneNumber = "1234567890", isLoading = true),
-            onAction = {}
-        )
     }
 }

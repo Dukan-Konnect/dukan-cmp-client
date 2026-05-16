@@ -7,13 +7,16 @@ import org.example.project.core.datastore.model.UserData
 interface UserPreferencesRepository {
     val userData: StateFlow<UserData>
     suspend fun updateUserData(userData: UserData)
-    suspend fun saveToken(token : String)
 
+    suspend fun updateName(name: String)
+    suspend fun updatePhoneNumber(phoneNumber: String)
     suspend fun updateAddress(address: String)
+    suspend fun updateToken(token: String)
+    suspend fun setLoggedIn(isLoggedIn: Boolean)
+
     suspend fun logOut()
 
      fun getUserData(): Flow<UserData>
 
-    suspend fun setLoggedIn(isLoggedIn: Boolean)
 
 }

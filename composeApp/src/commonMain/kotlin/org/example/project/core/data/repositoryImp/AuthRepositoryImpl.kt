@@ -29,7 +29,7 @@ class AuthRepositoryImpl(
         val request = VerifyRequestDto(phoneNumber, otp)
         val response = authenticationService.verifyOtp(request)
 
-        userPreferencesRepository.saveToken(response.token)
+        userPreferencesRepository.updateToken(response.token)
         response
     }
 

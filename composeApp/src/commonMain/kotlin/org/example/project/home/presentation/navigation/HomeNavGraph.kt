@@ -12,6 +12,7 @@ import org.example.project.home.presentation.screens.BookingsScreen
 import org.example.project.home.presentation.screens.HomeScreen
 import org.example.project.home.presentation.screens.ServiceDetailScreen
 import org.example.project.home.presentation.screens.SummaryScreen
+import org.example.project.onboarding.presentation.navigation.LocationFetchRoute
 import org.example.project.onboarding.presentation.navigation.navigateToLocationFetchScreen
 import org.example.project.profile.presentation.screens.EditProfileScreen
 import org.example.project.profile.presentation.screens.ProfileScreen
@@ -24,14 +25,17 @@ fun NavController.navigateToServiceDetailScreen(serviceId: Long) = navigate(Serv
 fun NavController.navigateToSummaryScreen() = navigate(SummaryRoute)
 fun NavController.navigateToEditProfileScreen() = navigate(EditProfileRoute)
 
-// --- Destination Builders ---
 fun NavGraphBuilder.homeDestination(navController: NavController) {
     composable<HomeRoute> {
         HomeScreen(
             onServiceClick = { id ->
                 navController.navigateToServiceDetailScreen(id.toLong())
             },
-            onLocationClick = navController::navigateToLocationFetchScreen
+            onLocationClick = {
+                navController.navigate(LocationFetchRoute) {
+                    popUpTo<HomeRoute> { inclusive = true }
+                }
+            }
         )
     }
 }

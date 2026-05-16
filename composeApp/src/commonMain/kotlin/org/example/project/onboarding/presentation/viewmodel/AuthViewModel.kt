@@ -2,6 +2,7 @@ package org.example.project.onboarding.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -12,8 +13,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.example.project.core.data.repository.AuthRepository
 import org.example.project.core.utils.DataState
-import kotlinx.coroutines.channels.BufferOverflow
 import org.example.project.core.datastore.UserPreferencesRepository
+import org.example.project.core.datastore.model.UserData
 
 class AuthViewModel(
     private val authRepository: AuthRepository,
@@ -37,37 +38,25 @@ class AuthViewModel(
             is AuthIntent.OtpChanged -> updateOtp(intent.otp)
             is AuthIntent.SendOtpClicked -> sendOtp()
             is AuthIntent.VerifyOtpClicked -> verifyOtp()
-            is AuthIntent.ErrorDismissed -> clearError()
+            is AuthIntent.DismissDialog -> clearDialog() // <-- Handles dismissing errors
         }
     }
 
     private fun updatePhoneNumber(phoneNumber: String) {
         val filteredNumber = phoneNumber.filter { it.isDigit() }.take(10)
-        _uiState.update {
-            it.copy(
-                phoneNumber = filteredNumber,
-                error = null
-            )
-        }
+        _uiState.update { it.copy(phoneNumber = filteredNumber) }
     }
 
     private fun updateOtp(otp: String) {
         val filteredOtp = otp.filter { it.isDigit() }.take(6)
-        _uiState.update {
-            it.copy(
-                otp = filteredOtp,
-                error = null
-            )
-        }
+        _uiState.update { it.copy(otp = filteredOtp) }
     }
 
     private fun sendOtp() {
         val phoneNumber = _uiState.value.phoneNumber
 
         if (phoneNumber.length != 10) {
-            _uiState.update {
-                it.copy(error = "Please enter a valid 10-digit phone number")
-            }
+            showError("Please enter a valid 10-digit phone number")
             return
         }
 
@@ -79,11 +68,9 @@ class AuthViewModel(
                     hideLoading()
                     _effect.emit(AuthEffect.NavigateToOtpScreen(phoneNumber))
                 }
-
                 is DataState.Error -> {
                     showError(result.exception.message ?: "An unexpected error occurred")
                 }
-
                 DataState.Loading -> {
                     showLoading()
                 }
@@ -96,9 +83,7 @@ class AuthViewModel(
         val otp = _uiState.value.otp
 
         if (otp.length != 6) {
-            _uiState.update {
-                it.copy(error = "Please enter a valid 6-digit OTP")
-            }
+            showError("Please enter a valid 6-digit OTP")
             return
         }
 
@@ -109,14 +94,12 @@ class AuthViewModel(
                 is DataState.Success -> {
                     isNewUser = result.data.isNewUser
                     hideLoading()
-                    if(isNewUser) _effect.emit(AuthEffect.NavigateToNextScreen)
+                    if (isNewUser) _effect.emit(AuthEffect.NavigateToNextScreen)
                     else prefRepository.setLoggedIn(true)
                 }
-
                 is DataState.Error -> {
                     showError(result.exception.message ?: "An unexpected error occurred")
                 }
-
                 DataState.Loading -> {
                     showLoading()
                 }
@@ -124,30 +107,20 @@ class AuthViewModel(
         }
     }
 
-    private fun clearError() {
-        _uiState.update { it.copy(error = null) }
+    private fun clearDialog() {
+        _uiState.update { it.copy(dialogState = null) }
     }
 
     private fun showLoading() {
-        _uiState.update {
-            it.copy(
-                isLoading = true,
-                error = null
-            )
-        }
+        _uiState.update { it.copy(dialogState = AuthUiState.DialogState.Loading) }
     }
 
     private fun hideLoading() {
-        _uiState.update { it.copy(isLoading = false) }
+        _uiState.update { it.copy(dialogState = null) }
     }
 
     private fun showError(message: String) {
-        _uiState.update {
-            it.copy(
-                isLoading = false,
-                error = message
-            )
-        }
+        _uiState.update { it.copy(dialogState = AuthUiState.DialogState.Error(message)) }
     }
 }
 
@@ -156,7 +129,7 @@ sealed class AuthIntent {
     data class OtpChanged(val otp: String) : AuthIntent()
     data object SendOtpClicked : AuthIntent()
     data object VerifyOtpClicked : AuthIntent()
-    data object ErrorDismissed : AuthIntent()
+    data object DismissDialog : AuthIntent()
 }
 
 sealed class AuthEffect {
@@ -167,6 +140,10 @@ sealed class AuthEffect {
 data class AuthUiState(
     val phoneNumber: String = "",
     val otp: String = "",
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
+    val dialogState: DialogState? = null
+) {
+    sealed interface DialogState {
+        data class Error(val message: String) : DialogState
+        data object Loading : DialogState
+    }
+}

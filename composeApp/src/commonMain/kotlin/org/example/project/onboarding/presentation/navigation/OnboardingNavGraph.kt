@@ -17,9 +17,6 @@ import org.example.project.onboarding.presentation.screens.OTPScreen
 import org.example.project.onboarding.presentation.screens.OnboardingScreen
 import org.example.project.onboarding.presentation.viewmodel.AuthViewModel
 import org.koin.compose.viewmodel.koinViewModel
-import kotlinx.serialization.Serializable
-
-// --- Routes ---
 
 fun NavController.navigateToAuthGraph() {
     navigate(AuthRoute) {
@@ -104,7 +101,6 @@ fun NavGraphBuilder.locationFetchDestination(navController: NavController) {
     }
 }
 
-// --- Main Graph Assembly ---
 fun NavGraphBuilder.onboardingNavGraph(navController: NavController) {
     onboardingDestination(navController)
     authGraph(navController)

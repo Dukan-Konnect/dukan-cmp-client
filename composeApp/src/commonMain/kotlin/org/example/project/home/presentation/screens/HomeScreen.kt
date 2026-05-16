@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_close
 import dukaankonnect.composeapp.generated.resources.ic_location
 import dukaankonnect.composeapp.generated.resources.ic_search
 import dukaankonnect.composeapp.generated.resources.manv
@@ -54,38 +55,93 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
 
+    // Effects are only for navigation now
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is HomeEffect.NavigateToService -> {
-                    onServiceClick(effect.id)
-                }
-                HomeEffect.OpenLocationPicker -> {
-                    onLocationClick()
-                }
+                is HomeEffect.NavigateToService -> onServiceClick(effect.id)
+                HomeEffect.OpenLocationPicker -> onLocationClick()
                 HomeEffect.OpenBanner -> { /* TODO open banner destination */ }
-                is HomeEffect.ShowMessage -> {
-                    val result = snackbarHostState.showSnackbar(
-                        message = effect.message,
-                        actionLabel = "Retry",
-                        duration = SnackbarDuration.Short
-                    )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        viewModel.handleIntent(HomeIntent.Retry)
-                    }
-                }
             }
         }
     }
 
     val intent: (HomeIntent) -> Unit = viewModel::handleIntent
-    HomeScreenContent(
-        uiState = uiState,
-        intent = intent,
-        snackbarHostState = snackbarHostState
-    )
+
+    // Main Container
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF7F7F7))
+    ) {
+        // Condition 1: If DialogState is null, we successfully have data. Show content.
+        if (uiState.dialogState == null) {
+            HomeScreenContent(
+                uiState = uiState,
+                intent = intent
+            )
+        }
+        // Condition 2: Render Loading or Error based on DialogState
+        else {
+            HomeDialogs(
+                state = uiState,
+                onRetry = { intent(HomeIntent.Retry) }
+            )
+        }
+    }
+}
+
+// <-- Added exact DialogState component replication from Mifos
+@Composable
+private fun HomeDialogs(
+    state: HomeUiState,
+    onRetry: () -> Unit,
+) {
+    when (val dialogState = state.dialogState) {
+        is HomeUiState.DialogState.Loading -> {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color(0xFF6C4DFF))
+            }
+        }
+        is HomeUiState.DialogState.Error -> {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "Oops! Something went wrong",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = dialogState.message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = onRetry,
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(text = "Try Again", color = Color.White)
+                    }
+                }
+            }
+        }
+        null -> Unit
+    }
 }
 
 @OptIn(ExperimentalResourceApi::class)
@@ -93,210 +149,201 @@ fun HomeScreen(
 fun HomeScreenContent(
     uiState: HomeUiState,
     intent: (HomeIntent) -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
-    Box(
-        modifier = Modifier
+    Column(
+        Modifier
             .fillMaxSize()
-            .background(Color(0xFFF7F7F7))
+            .padding(8.dp)
+            .verticalScroll(rememberScrollState())
     ) {
-        if (uiState.isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center)
-            )
-        }
-
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 80.dp)
-        )
-
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(8.dp)
-                .verticalScroll(rememberScrollState())
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = Color.White,
+            shadowElevation = 2.dp
         ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
-                shadowElevation = 2.dp
-            ) {
-                Column {
-                    Row(
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { intent(HomeIntent.LocationClicked) }
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_location),
+                        contentDescription = "Location",
+                        tint = Color.Black,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = AddressFormatter.formatShortAddress(uiState.userLocation ?: "No location set"),
+                        fontSize = 14.sp,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 4.dp)
+                ) {
+                    TextField(
+                        value = uiState.searchQuery,
+                        onValueChange = { intent(HomeIntent.SearchQueryChanged(it)) },
+                        enabled = uiState.isSearchEnabled,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { intent(HomeIntent.LocationClicked) }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_location),
-                            contentDescription = "Location",
-                            tint = Color.Black,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = AddressFormatter.formatShortAddress(uiState.userLocation ?: "No location set"),
-                            fontSize = 14.sp,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 4.dp)
-                    ) {
-                        TextField(
-                            value = uiState.searchQuery,
-                            onValueChange = { intent(HomeIntent.SearchQueryChanged(it)) },
-                            enabled = uiState.isSearchEnabled,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color.White),
-                            placeholder = { Text(if (uiState.isSearchEnabled) "Search for services and packages" else "Loading services...", fontSize = 14.sp) },
-                            textStyle = TextStyle(fontSize = 14.sp),
-                            leadingIcon = {
-                                Icon(
-                                    painter = painterResource(Res.drawable.ic_search),
-                                    contentDescription = "Search",
-                                    tint = Color.Gray,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            },
-                            singleLine = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                disabledIndicatorColor = Color.Transparent,
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                disabledContainerColor = Color(0xFFF0F0F0), // Slight grey tint when disabled
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White),
+                        placeholder = { Text(if (uiState.isSearchEnabled) "Search for services and packages" else "Loading services...", fontSize = 14.sp) },
+                        textStyle = TextStyle(fontSize = 14.sp),
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_search),
+                                contentDescription = "Search",
+                                tint = Color.Gray,
+                                modifier = Modifier.size(24.dp)
                             )
-                        )
-                    }
-
-
-                    AnimatedVisibility(
-                        visible = uiState.searchQuery.isNotBlank(),
-                        enter = expandVertically(),
-                        exit = shrinkVertically()
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFF9F9F9))
-                                .padding(vertical = 12.dp)
-                        ) {
-                            Text(
-                                text = "Search Results",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.Gray,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            )
-
-                            if (uiState.searchResults.isNotEmpty()) {
-                                LazyRow(
-                                    contentPadding = PaddingValues(horizontal = 12.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    items(uiState.searchResults) { service ->
-                                        ServiceItem(
-                                            service = service,
-                                            onClick = { intent(HomeIntent.ServiceClicked(service.id)) },
-                                            modifier = Modifier.width(90.dp)
-                                        )
-                                    }
+                        },
+                        trailingIcon = {
+                            if (uiState.searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { intent(HomeIntent.SearchQueryChanged("")) }) {
+                                    Icon(
+                                        painter = painterResource(Res.drawable.ic_close),
+                                        contentDescription = "Clear search",
+                                        tint = Color.Gray
+                                    )
                                 }
-                            } else {
-                                Text(
-                                    text = "No services found for \"${uiState.searchQuery}\"",
-                                    fontSize = 14.sp,
-                                    color = Color.Black,
-                                    modifier = Modifier.padding(horizontal = 16.dp)
-                                )
                             }
+                        },
+                        // ---------------------------------
+                        singleLine = true,
+                        colors = TextFieldDefaults.colors(
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            disabledContainerColor = Color(0xFFF0F0F0),
+                        )
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = uiState.searchQuery.isNotBlank(),
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFF9F9F9))
+                            .padding(vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = "Search Results",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+
+                        if (uiState.searchResults.isNotEmpty()) {
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 12.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(uiState.searchResults) { service ->
+                                    ServiceItem(
+                                        service = service,
+                                        onClick = { intent(HomeIntent.ServiceClicked(service.id)) },
+                                        modifier = Modifier.width(90.dp)
+                                    )
+                                }
+                            }
+                        } else {
+                            Text(
+                                text = "No services found for \"${uiState.searchQuery}\"",
+                                fontSize = 14.sp,
+                                color = Color.Black,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
                         }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+
+        if (uiState.searchQuery.isBlank()) {
+            uiState.banner?.let { bannerData ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                        .clickable(onClick = { intent(HomeIntent.BannerClicked) }),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF6C4DFF))
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Row(
+                            modifier = Modifier.align(Alignment.CenterStart),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(16.dp),
+                                text = bannerData.title,
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                lineHeight = 24.sp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            Image(
+                                painter = painterResource(Res.drawable.manv),
+                                contentDescription = "Banner Image",
+                                modifier = Modifier
+                                    .height(100.dp)
+                                    .width(80.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    }
                 }
             }
 
-            if (uiState.searchQuery.isBlank()) {
-                uiState.banner?.let { bannerData ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp)
-                            .clickable(onClick = { intent(HomeIntent.BannerClicked) }),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF6C4DFF))
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize()
-                        ) {
-                            Row(
-                                modifier = Modifier.align(Alignment.CenterStart),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(16.dp),
-                                    text = bannerData.title,
-                                    color = Color.White,
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    lineHeight = 24.sp
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
+            if (uiState.personalService.isNotEmpty()) {
+                ServiceSection(
+                    title = "Personal Services",
+                    services = uiState.personalService,
+                    onServiceClick = { id -> intent(HomeIntent.ServiceClicked(id)) }
+                )
+            }
 
-                                Image(
-                                    painter = painterResource(Res.drawable.manv),
-                                    contentDescription = "Banner Image",
-                                    modifier = Modifier
-                                        .height(100.dp)
-                                        .width(80.dp)
-                                        .clip(RoundedCornerShape(8.dp)),
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
-                        }
-                    }
-                }
+            if (uiState.homeService.isNotEmpty()) {
+                ServiceSection(
+                    title = "Home Services",
+                    services = uiState.homeService,
+                    onServiceClick = { id -> intent(HomeIntent.ServiceClicked(id)) }
+                )
+            }
 
-                if (uiState.personalService.isNotEmpty()) {
-                    ServiceSection(
-                        title = "Personal Services",
-                        services = uiState.personalService,
-                        onServiceClick = { id -> intent(HomeIntent.ServiceClicked(id)) }
-                    )
-                }
-
-                if (uiState.homeService.isNotEmpty()) {
-                    ServiceSection(
-                        title = "Home Services",
-                        services = uiState.homeService,
-                        onServiceClick = { id -> intent(HomeIntent.ServiceClicked(id)) }
-                    )
-                }
-
-                if (uiState.trendingService.isNotEmpty()) {
-                    ServiceSection(
-                        title = "Trending Services",
-                        services = uiState.trendingService,
-                        onServiceClick = { id -> intent(HomeIntent.ServiceClicked(id)) }
-                    )
-                }
+            if (uiState.trendingService.isNotEmpty()) {
+                ServiceSection(
+                    title = "Trending Services",
+                    services = uiState.trendingService,
+                    onServiceClick = { id -> intent(HomeIntent.ServiceClicked(id)) }
+                )
             }
         }
     }
@@ -387,24 +434,30 @@ fun ServiceItem(
 fun HomeScreenPreview() {
     val dummyServices = listOf(
         Service(id = 1, name = "Electrical Plumbing", icon = "ic_electrical.xml", category = ServiceCategory.HOME),
-        Service(id = 2, name = "Cleaning & Pest", icon = "ic_cleaning.xml", category = ServiceCategory.HOME),
-        Service(id = 3, name = "Home repairs", icon = "ic_home_repairs.xml", category = ServiceCategory.HOME),
-        Service(id = 4, name = "Home Painting", icon = "ic_painting.xml", category = ServiceCategory.HOME),
-        Service(id = 5, name = "Salon for Women", icon = "ic_salon_women.xml", category = ServiceCategory.HOME)
+        Service(id = 2, name = "Cleaning & Pest", icon = "ic_cleaning.xml", category = ServiceCategory.HOME)
     )
 
     val previewState = HomeUiState(
-        isLoading = false,
+        dialogState = null,
         userLocation = "Kavuri Hills, Madhapur",
         banner = Banner(1, "Let’s make a package just for you, Manvi!", "", "", ""),
         personalService = dummyServices,
-        homeService = dummyServices.take(4),
-        trendingService = dummyServices.shuffled(),
+        homeService = dummyServices,
+        trendingService = dummyServices,
         searchQuery = ""
     )
 
-    HomeScreenContent(
-        uiState = previewState,
-        intent = {}
-    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (previewState.dialogState == null) {
+            HomeScreenContent(
+                uiState = previewState,
+                intent = {}
+            )
+        } else {
+            HomeDialogs(
+                state = previewState,
+                onRetry = {}
+            )
+        }
+    }
 }

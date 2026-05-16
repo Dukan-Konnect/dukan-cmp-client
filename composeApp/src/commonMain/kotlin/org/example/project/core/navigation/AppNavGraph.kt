@@ -23,19 +23,15 @@ fun AppNavGraph(
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            // Show bottom bar only for main screens
             if (shouldShowBottomBar(currentRoute)) {
                 BottomBar(
                     currentRoute = getCurrentRouteObject(currentRoute),
                     onNavigate = { route ->
                         navController.navigate(route) {
-                            // Pop up to the start destination and save state
                             popUpTo(HomeRoute) {
                                 saveState = true
                             }
-                            // Avoid multiple copies of the same destination
                             launchSingleTop = true
-                            // Restore state when reselecting a previously selected item
                             restoreState = true
                         }
                     }
