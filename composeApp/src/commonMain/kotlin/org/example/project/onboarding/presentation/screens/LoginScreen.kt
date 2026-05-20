@@ -187,3 +187,17 @@ fun LoginContent(
         Spacer(modifier = Modifier.weight(1f))
     }
 }
+
+@Preview
+@Composable
+fun LoginContentPreview() {
+    MaterialTheme {
+        LoginContent(
+            uiState = AuthUiState(
+                phoneNumber = "1234567890",
+                dialogState = null
+            ),
+            onAction = {}
+        )
+    }
+}

@@ -12,9 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.example.project.core.data.repository.AuthRepository
-import org.example.project.core.utils.DataState
 import org.example.project.core.datastore.UserPreferencesRepository
-import org.example.project.core.datastore.model.UserData
+import org.example.project.core.utils.DataState
 
 class AuthViewModel(
     private val authRepository: AuthRepository,
@@ -38,7 +37,7 @@ class AuthViewModel(
             is AuthIntent.OtpChanged -> updateOtp(intent.otp)
             is AuthIntent.SendOtpClicked -> sendOtp()
             is AuthIntent.VerifyOtpClicked -> verifyOtp()
-            is AuthIntent.DismissDialog -> clearDialog() // <-- Handles dismissing errors
+            is AuthIntent.DismissDialog -> clearDialog()
         }
     }
 
@@ -69,7 +68,9 @@ class AuthViewModel(
                     _effect.emit(AuthEffect.NavigateToOtpScreen(phoneNumber))
                 }
                 is DataState.Error -> {
-                    showError(result.exception.message ?: "An unexpected error occurred")
+                    val rawMessage = result.exception.message ?: "An unexpected error occurred"
+                    val cleanMessage = rawMessage.substringBefore("[").trim()
+                    showError(cleanMessage)
                 }
                 DataState.Loading -> {
                     showLoading()
@@ -98,7 +99,9 @@ class AuthViewModel(
                     else prefRepository.setLoggedIn(true)
                 }
                 is DataState.Error -> {
-                    showError(result.exception.message ?: "An unexpected error occurred")
+                    val rawMessage = result.exception.message ?: "An unexpected error occurred"
+                    val cleanMessage = rawMessage.substringBefore("[").trim()
+                    showError(cleanMessage)
                 }
                 DataState.Loading -> {
                     showLoading()
