@@ -22,8 +22,7 @@ class BaseURL {
 
     companion object {
         const val API_ENDPOINT = ""
-//        const val API_PATH = "10.0.2.2:8080/api/"
-        const val API_PATH = "192.168.29.196:8080/api/"
+        const val API_PATH = "192.168.1.8:8080/api/"
         const val PROTOCOL_HTTPS = "http://"
     }
 }

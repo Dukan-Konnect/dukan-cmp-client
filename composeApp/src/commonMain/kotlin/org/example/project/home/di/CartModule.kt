@@ -4,8 +4,10 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 import org.example.project.home.data.local.database.CartDatabase
 import org.example.project.home.data.repository.BookingRepositoryImpl
+import org.example.project.home.data.repository.BookingRemoteRepositoryImpl
 import org.example.project.home.data.repository.CartRepositoryImpl
 import org.example.project.home.domain.repository.BookingRepository
+import org.example.project.home.domain.repository.BookingRemoteRepository
 import org.example.project.home.domain.repository.CartRepository
 import org.example.project.home.domain.usecase.CartUseCases
 import org.example.project.home.presentation.viewmodels.BookingsViewModel
@@ -23,6 +25,7 @@ val cartModule = module {
     // Repositories
     single<CartRepository> { CartRepositoryImpl(get()) }
     single<BookingRepository> { BookingRepositoryImpl(get()) }
+    single<BookingRemoteRepository> { BookingRemoteRepositoryImpl(get()) }
 
     // Use Cases
     single { CartUseCases(get()) }
@@ -31,4 +34,3 @@ val cartModule = module {
     viewModelOf(::BookingsViewModel)
     viewModelOf(::ProfileViewModel)
 }
-

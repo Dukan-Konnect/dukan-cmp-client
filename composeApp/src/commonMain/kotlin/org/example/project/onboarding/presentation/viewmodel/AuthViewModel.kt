@@ -95,6 +95,7 @@ class AuthViewModel(
                 is DataState.Success -> {
                     isNewUser = result.data.isNewUser
                     hideLoading()
+                    prefRepository.updatePhoneNumber(phoneNumber)
                     if (isNewUser) _effect.emit(AuthEffect.NavigateToNextScreen)
                     else prefRepository.setLoggedIn(true)
                 }

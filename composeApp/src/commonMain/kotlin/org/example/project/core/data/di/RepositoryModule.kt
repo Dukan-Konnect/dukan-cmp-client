@@ -17,4 +17,4 @@ val RepositoryModule = module {
 
     single<HomeRepository> { HomeRepositoryImpl(get()) }
     single<ServiceDetailsRepository> { ServiceDetailsRepositoryImpl(get()) }
-}
+} 

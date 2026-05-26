@@ -28,7 +28,7 @@ fun AppNavGraph(
                     currentRoute = getCurrentRouteObject(currentRoute),
                     onNavigate = { route ->
                         navController.navigate(route) {
-                            popUpTo(HomeRoute) {
+                            popUpTo<HomeRoute> {
                                 saveState = true
                             }
                             launchSingleTop = true

@@ -75,7 +75,18 @@ fun NavGraphBuilder.serviceDetailDestination(navController: NavController) {
 fun NavGraphBuilder.summaryDestination(navController: NavController) {
     composable<SummaryRoute> {
         SummaryScreen(
-            onBack = navController::navigateUp
+            onBack = navController::navigateUp,
+            onPay = {
+                navController.popBackStack<HomeRoute>(inclusive = false)
+
+                navController.navigate(BookingsRoute) {
+                    popUpTo<HomeRoute> {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
         )
     }
 }

@@ -1,31 +1,58 @@
 package org.example.project.home.presentation.screens
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dukaankonnect.composeapp.generated.resources.Res
@@ -35,10 +62,10 @@ import dukaankonnect.composeapp.generated.resources.ic_edit
 import dukaankonnect.composeapp.generated.resources.ic_location
 import dukaankonnect.composeapp.generated.resources.ic_phone
 import dukaankonnect.composeapp.generated.resources.ic_star
+import org.example.project.core.utils.AddressFormatter
 import org.example.project.home.presentation.viewmodels.SummaryEffect
 import org.example.project.home.presentation.viewmodels.SummaryEvent
 import org.example.project.home.presentation.viewmodels.SummaryViewModel
-import org.example.project.core.utils.AddressFormatter
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
@@ -71,6 +98,7 @@ fun SummaryScreen(
     onCouponsClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     var showAddressSheet by remember { mutableStateOf(false) }
     var showTimeSlotSheet by remember { mutableStateOf(false) }
@@ -91,7 +119,7 @@ fun SummaryScreen(
                     paymentPhoneNumber = state.cartSummary?.phoneNumber ?: ""
                 }
                 is SummaryEffect.ShowMessage -> {
-                    // Removed snackbar notification - silently ignore messages
+                    snackbarHostState.showSnackbar(effect.message)
                 }
             }
         }
@@ -249,7 +277,7 @@ fun SummaryScreen(
                 // Phone row
                 PhoneRow(
                     name = state.cartSummary?.name ?: "You",
-                    phoneNumber = state.cartSummary?.phoneNumber ?: "1234567890",
+                    phoneNumber = state.cartSummary?.phoneNumber?.takeIf { it.isNotBlank() } ?: "Add phone number",
                     onEditClick = { showPhoneSheet = true }
                 )
 
@@ -330,12 +358,10 @@ fun SummaryScreen(
                                 color = Color.Black
                             )
                         }
-
-                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(96.dp))
             }
         }
 
@@ -388,7 +414,7 @@ fun SummaryScreen(
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
-                            painter = painterResource(Res.drawable.ic_edit), // edit/pencil icon - use placeholder for now
+                            painter = painterResource(Res.drawable.ic_edit),
                             contentDescription = "Edit address",
                             tint = Color(0xFF6C4DFF),
                             modifier = Modifier.size(20.dp)
@@ -412,7 +438,7 @@ fun SummaryScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                painter = painterResource(Res.drawable.ic_calendar_clock), // time icon
+                                painter = painterResource(Res.drawable.ic_calendar_clock),
                                 contentDescription = "Time slot",
                                 tint = Color.Black,
                                 modifier = Modifier.size(20.dp)
@@ -431,7 +457,7 @@ fun SummaryScreen(
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
-                                painter = painterResource(Res.drawable.ic_edit), // edit/pencil icon - use placeholder for now
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = "Edit time slot",
                                 tint = Color(0xFF6C4DFF),
                                 modifier = Modifier.size(20.dp)
@@ -466,6 +492,13 @@ fun SummaryScreen(
                 }
             }
         }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        )
 
         // Address Bottom Sheet
         if (showAddressSheet) {
@@ -651,6 +684,11 @@ fun PhoneRow(
     phoneNumber: String,
     onEditClick: () -> Unit
 ) {
+    val displayNumber = if (phoneNumber.length == 10 && phoneNumber.all { it.isDigit() }) {
+        "+91-$phoneNumber"
+    } else {
+        phoneNumber
+    }
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -678,7 +716,7 @@ fun PhoneRow(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "$name, +91-$phoneNumber",
+                    text = "$name, $displayNumber",
                     fontSize = 15.sp,
                     color = Color.Black,
                     fontWeight = FontWeight.Medium,

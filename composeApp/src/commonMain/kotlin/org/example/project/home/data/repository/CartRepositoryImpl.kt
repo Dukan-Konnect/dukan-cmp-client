@@ -20,6 +20,27 @@ class CartRepositoryImpl(
     private val cartDao: CartDao
 ) : CartRepository {
 
+    private suspend fun ensureSummaryExists(
+        now: Long,
+        phoneNumber: String? = null
+    ) {
+        val existing = cartDao.getCartSummary()
+        if (existing != null) return
+
+        cartDao.insertOrUpdateSummary(
+            CartSummaryEntity(
+                name = null,
+                phoneNumber = phoneNumber ?: "",
+                address = null,
+                timeSlot = null,
+                taxPercent = 5.0,
+                deliveryChargesCents = 0L,
+                createdAt = now,
+                updatedAt = now
+            )
+        )
+    }
+
     override fun observeCartItems(): Flow<List<CartItem>> =
         cartDao.observeCartItems().map { it.toDomainModels() }
 
@@ -27,7 +48,8 @@ class CartRepositoryImpl(
         cartDao.observeCartSummary().map { it?.toDomainModel() }
 
     override fun observeCartTotals() = combine(observeCartItems(), observeCartSummary()) { items, summary ->
-        if (summary != null) CartSummary.calculateTotals(items, summary) else null
+        val effectiveSummary = summary ?: CartSummary(phoneNumber = "")
+        CartSummary.calculateTotals(items, effectiveSummary)
     }
 
     override fun observeCartData() = combine(observeCartItems(), observeCartSummary(), observeCartTotals()) { items, summary, totals ->
@@ -57,11 +79,35 @@ class CartRepositoryImpl(
 
     override suspend fun getCartItems() = runCatching { cartDao.getCartItems().toDomainModels() }
 
-    override suspend fun updatePhoneNumber(phoneNumber: String) = runCatching { cartDao.updatePhoneNumber(phoneNumber, getCurrentTimeMillis()) }
-    override suspend fun updateAddress(address: String?) = runCatching { cartDao.updateAddress(address, getCurrentTimeMillis()) }
-    override suspend fun updateTimeSlot(timeSlot: String?) = runCatching { cartDao.updateTimeSlot(timeSlot, getCurrentTimeMillis()) }
-    override suspend fun updateTaxPercent(taxPercent: Double) = runCatching { cartDao.updateTaxPercent(taxPercent, getCurrentTimeMillis()) }
-    override suspend fun updateDeliveryCharges(deliveryChargesCents: Long) = runCatching { cartDao.updateDeliveryCharges(deliveryChargesCents, getCurrentTimeMillis()) }
+    override suspend fun updatePhoneNumber(phoneNumber: String) = runCatching {
+        val now = getCurrentTimeMillis()
+        ensureSummaryExists(now, phoneNumber = phoneNumber)
+        cartDao.updatePhoneNumber(phoneNumber, now)
+    }
+
+    override suspend fun updateAddress(address: String?) = runCatching {
+        val now = getCurrentTimeMillis()
+        ensureSummaryExists(now)
+        cartDao.updateAddress(address, now)
+    }
+
+    override suspend fun updateTimeSlot(timeSlot: String?) = runCatching {
+        val now = getCurrentTimeMillis()
+        ensureSummaryExists(now)
+        cartDao.updateTimeSlot(timeSlot, now)
+    }
+
+    override suspend fun updateTaxPercent(taxPercent: Double) = runCatching {
+        val now = getCurrentTimeMillis()
+        ensureSummaryExists(now)
+        cartDao.updateTaxPercent(taxPercent, now)
+    }
+
+    override suspend fun updateDeliveryCharges(deliveryChargesCents: Long) = runCatching {
+        val now = getCurrentTimeMillis()
+        ensureSummaryExists(now)
+        cartDao.updateDeliveryCharges(deliveryChargesCents, now)
+    }
     override suspend fun getCartSummary() = runCatching { cartDao.getCartSummary()?.toDomainModel() }
     override suspend fun calculateTotals() = runCatching {
         val items = cartDao.getCartItems().toDomainModels()

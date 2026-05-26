@@ -27,7 +27,11 @@ class KtorInterceptor(
 
                 plugin.getToken()?.let { token ->
                     if (token.isNotEmpty()) {
-                        context.headers[HEADER_AUTH] = "Bearer $token"
+                        // Don't override Authorization if the request already set it (e.g. Basic for Razorpay).
+                        val existingAuth = context.headers[HEADER_AUTH]
+                        if (existingAuth.isNullOrBlank()) {
+                            context.headers[HEADER_AUTH] = "Bearer $token"
+                        }
                     }
                 }
             }

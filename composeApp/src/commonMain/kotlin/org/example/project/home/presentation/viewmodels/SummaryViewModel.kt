@@ -5,11 +5,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.utils.AddressFormatter
+import org.example.project.core.utils.DataState
 import org.example.project.home.domain.model.CartItem
 import org.example.project.home.domain.model.CartSummary
 import org.example.project.home.domain.model.CartTotals
+import org.example.project.home.domain.model.CreateBookingRequest
 import org.example.project.home.domain.usecase.CartUseCases
+import org.example.project.home.domain.repository.BookingRemoteRepository
 
 @Immutable
 data class SummaryUiState(
@@ -42,7 +46,9 @@ sealed interface SummaryEffect {
 class SummaryViewModel(
     private val cartUseCases: CartUseCases,
     private val createPaymentOrder: org.example.project.home.domain.usecase.CreatePaymentOrderUseCase,
-    private val bookingRepository: org.example.project.home.domain.repository.BookingRepository
+    private val bookingRepository: org.example.project.home.domain.repository.BookingRepository,
+    private val bookingRemoteRepository: BookingRemoteRepository,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SummaryUiState())
@@ -53,6 +59,7 @@ class SummaryViewModel(
 
     init {
         observeCartData()
+        prefillAddressFromUserLocation()
     }
 
     private fun observeCartData() {
@@ -76,6 +83,33 @@ class SummaryViewModel(
                             isLoading = false,
                             errorMessage = null
                         )
+                    }
+                }
+        }
+    }
+
+    private fun prefillAddressFromUserLocation() {
+        viewModelScope.launch {
+            userPreferencesRepository.userData
+                .map { Triple(it.name.trim(), it.phoneNumber.trim(), it.address.trim()) }
+                .distinctUntilChanged()
+                .collect { user ->
+                    val prefName = user.first
+                    val prefPhone = user.second
+                    val prefAddress = user.third
+
+                    val current = _state.value.cartSummary
+
+                    if (prefPhone.isNotBlank() && current?.phoneNumber.isNullOrBlank()) {
+                        cartUseCases.updatePhoneNumber(prefPhone)
+                    }
+
+                    if (prefName.isNotBlank() && current?.name.isNullOrBlank()) {
+                        cartUseCases.updateUserName(prefName)
+                    }
+
+                    if (prefAddress.isNotBlank() && current?.address.isNullOrBlank()) {
+                        cartUseCases.updateDeliveryAddress(prefAddress)
                     }
                 }
         }
@@ -242,48 +276,69 @@ class SummaryViewModel(
     @OptIn(kotlin.time.ExperimentalTime::class)
     fun saveBookingsAfterPayment(orderId: String) {
         viewModelScope.launch {
-            try {
-                val items = _state.value.cartItems
-                val summary = _state.value.cartSummary
+            if (_state.value.isLoading) return@launch
 
-                if (items.isEmpty()) {
-                    return@launch
-                }
+            val items = _state.value.cartItems
+            val summary = _state.value.cartSummary
 
-                val currentTime = kotlin.time.Clock.System.now().toEpochMilliseconds()
+            if (items.isEmpty()) return@launch
 
-                items.forEach { cartItem ->
-                    val booking = org.example.project.home.domain.model.Booking(
-                        id = "${orderId}_${cartItem.productId}",
-                        orderId = orderId,
+            val scheduledDate = summary?.timeSlot
+            val address = summary?.address?.let { AddressFormatter.formatFullAddress(it) }
+
+            if (scheduledDate.isNullOrBlank() || address.isNullOrBlank()) {
+                _effect.emit(SummaryEffect.ShowMessage("Missing booking details (address/time slot)."))
+                return@launch
+            }
+
+            setLoading(true)
+
+            var failedCount = 0
+            var firstError: String? = null
+
+            items.forEach { cartItem ->
+                when (val remoteState = bookingRemoteRepository.createBooking(
+                    CreateBookingRequest(
                         subServiceId = cartItem.productId,
-                        subServiceName = cartItem.name,
-                        subServiceImage = cartItem.imageUrl,
                         providerId = cartItem.providerId,
-                        providerName = cartItem.providerName,
-                        providerImage = cartItem.providerImageUrl,
-                        providerPhone = cartItem.providerPhoneNumber,
-                        providerRating = cartItem.providerRating,
-                        providerFee = cartItem.providerFeeCents,
-                        servicePriceCents = cartItem.priceCents,
-                        totalAmountCents = cartItem.totalPriceCents,
-                        bookingDate = currentTime,
-                        scheduledDate = summary?.timeSlot,
-                        address = summary?.address?.let { AddressFormatter.formatFullAddress(it) },
-                        status = org.example.project.home.domain.model.BookingStatus.CONFIRMED,
-                        paymentStatus = org.example.project.home.domain.model.PaymentStatus.PAID
+                        scheduledDate = scheduledDate,
+                        address = address
                     )
-
-                    bookingRepository.createBooking(booking)
-                        .onFailure { error ->
-                            _effect.emit(SummaryEffect.ShowMessage("Failed to save booking: ${error.message}"))
+                )) {
+                    is DataState.Success -> {
+                        val booking = remoteState.data
+                        val localResult = bookingRepository.createBooking(booking)
+                        if (localResult.isSuccess) {
+                            cartUseCases.removeItemFromCart(cartItem.productId)
+                        } else {
+                            failedCount++
+                            if (firstError == null) {
+                                firstError = localResult.exceptionOrNull()?.message ?: "Failed to save booking locally"
+                            }
                         }
-                }
+                    }
 
-                // Clear cart after successful booking
-                cartUseCases.clearCartItems()
-            } catch (e: Exception) {
-                _effect.emit(SummaryEffect.ShowMessage("Error saving bookings: ${e.message}"))
+                    is DataState.Error -> {
+                        failedCount++
+                        if (firstError == null) {
+                            firstError = remoteState.message
+                        }
+                    }
+
+                    DataState.Loading -> Unit
+                }
+            }
+
+            setLoading(false)
+
+            if (failedCount > 0) {
+                _effect.emit(
+                    SummaryEffect.ShowMessage(
+                        "Booking sync failed for $failedCount item(s). ${firstError ?: ""}".trim()
+                    )
+                )
+            } else {
+                _effect.emit(SummaryEffect.ShowMessage("Booking successful"))
             }
         }
     }

@@ -4,9 +4,11 @@ import io.ktor.client.HttpClient
 import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.network.KtorfitClient
 import org.example.project.core.network.ktorHttpClient
+import org.example.project.core.network.services.BookingService
 import org.example.project.core.network.services.AuthenticationService
 import org.example.project.core.network.services.HomeService
 import org.example.project.core.network.services.ProfileService
+import org.example.project.core.network.services.ServiceDetailsService
 import org.example.project.core.utils.BaseURL
 import org.example.project.core.utils.KtorInterceptor
 import org.koin.dsl.module
@@ -44,6 +46,14 @@ val networkModule = module {
 
     single<HomeService> {
         get<KtorfitClient>().homeApi
+    }
+
+    single<BookingService> {
+        get<KtorfitClient>().bookingApi
+    }
+
+    single<ServiceDetailsService> {
+        get<KtorfitClient>().serviceDetailsApi
     }
 
 

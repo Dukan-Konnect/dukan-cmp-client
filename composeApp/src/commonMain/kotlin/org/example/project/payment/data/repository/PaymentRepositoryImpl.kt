@@ -3,6 +3,7 @@ package org.example.project.payment.data.repository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.header
+import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
@@ -68,7 +69,10 @@ class PaymentRepositoryImpl(
                     // Basic authentication with Razorpay credentials
                     val credentials = "$razorpayKeyId:$razorpayKeySecret"
                     val encodedCredentials = credentials.encodeBase64()
-                    header(HttpHeaders.Authorization, "Basic $encodedCredentials")
+                    headers {
+                        remove(HttpHeaders.Authorization)
+                        append(HttpHeaders.Authorization, "Basic $encodedCredentials")
+                    }
                     log(
                         "paymentviewmodel",
                         "Authorization header (Basic base64 id:secret) applied. Encoded length=${encodedCredentials.length}"
