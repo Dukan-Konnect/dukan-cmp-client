@@ -8,6 +8,7 @@ data class UserData(
     val phoneNumber: String = "",
     val address: String = "",
     val token: String = "",
+    val hasSeenOnboarding: Boolean = false,
     val isLoggedIn: Boolean = false
 ) {
     companion object {

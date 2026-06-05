@@ -12,6 +12,8 @@ import org.example.project.home.domain.repository.CartRepository
 import org.example.project.home.domain.usecase.CartUseCases
 import org.example.project.home.presentation.viewmodels.BookingsViewModel
 import org.example.project.home.presentation.viewmodels.ProfileViewModel
+import org.example.project.profile.data.repository.AddressRepositoryImpl
+import org.example.project.profile.domain.repository.AddressRepository
 
 expect val cartPlatformModule: org.koin.core.module.Module
 
@@ -21,11 +23,13 @@ val cartModule = module {
     // DAOs
     single { get<CartDatabase>().cartDao() }
     single { get<CartDatabase>().bookingDao() }
+    single { get<CartDatabase>().addressDao() }
 
     // Repositories
     single<CartRepository> { CartRepositoryImpl(get()) }
     single<BookingRepository> { BookingRepositoryImpl(get()) }
     single<BookingRemoteRepository> { BookingRemoteRepositoryImpl(get()) }
+    single<AddressRepository> { AddressRepositoryImpl(get()) }
 
     // Use Cases
     single { CartUseCases(get()) }

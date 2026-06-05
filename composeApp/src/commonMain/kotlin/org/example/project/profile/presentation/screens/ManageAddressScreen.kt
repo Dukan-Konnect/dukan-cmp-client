@@ -15,27 +15,40 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_address
+import dukaankonnect.composeapp.generated.resources.ic_arrow_back
+import dukaankonnect.composeapp.generated.resources.ic_delete
 import dukaankonnect.composeapp.generated.resources.ic_edit
+import dukaankonnect.composeapp.generated.resources.ic_more_vert
+import dukaankonnect.composeapp.generated.resources.ic_plus
+import org.example.project.profile.domain.model.SavedAddress
+import org.example.project.profile.presentation.viewmodels.ManageAddressEffect
+import org.example.project.profile.presentation.viewmodels.ManageAddressIntent
+import org.example.project.profile.presentation.viewmodels.ManageAddressViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
-
-data class Address(
-    val id: String,
-    val label: String,
-    val addressLine: String,
-    val phone: String,
-    val isDefault: Boolean = false
-)
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ManageAddressScreen(
     onBack: () -> Unit = {},
-    onAddAddress: () -> Unit = {},
-    onEditAddress: (Address) -> Unit = {},
-    onDeleteAddress: (String) -> Unit = {},
-    addresses: List<Address> = emptyList()
+    onNavigateToAddAddress: () -> Unit = {},
+    onNavigateToEditAddress: (String) -> Unit = {},
+    viewModel: ManageAddressViewModel = koinViewModel()
 ) {
-    var showDeleteDialog by remember { mutableStateOf<Address?>(null) }
+    val uiState by viewModel.uiState.collectAsState()
+    val intent: (ManageAddressIntent) -> Unit = viewModel::handleIntent
+    var showDeleteDialog by remember { mutableStateOf<SavedAddress?>(null) }
+
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                ManageAddressEffect.NavigateBack -> onBack()
+                ManageAddressEffect.NavigateToAddAddress -> onNavigateToAddAddress()
+                is ManageAddressEffect.NavigateToEditAddress -> onNavigateToEditAddress(effect.addressId)
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -43,49 +56,12 @@ fun ManageAddressScreen(
             .background(Color(0xFFF7F7F7))
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header with Status Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = Color.White,
                 shadowElevation = 2.dp
             ) {
                 Column {
-                    // Status Bar
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "9:41",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.Black
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_edit),
-                                contentDescription = "Signal",
-                                tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_edit),
-                                contentDescription = "WiFi",
-                                tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_edit),
-                                contentDescription = "Battery",
-                                tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-
                     // Title Bar
                     Row(
                         modifier = Modifier
@@ -93,9 +69,9 @@ fun ManageAddressScreen(
                             .padding(horizontal = 8.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = onBack) {
+                        IconButton(onClick = { intent(ManageAddressIntent.BackClicked) }) {
                             Icon(
-                                painter = painterResource(Res.drawable.ic_edit),
+                                painter = painterResource(Res.drawable.ic_arrow_back),
                                 contentDescription = "Back",
                                 tint = Color.Black
                             )
@@ -116,58 +92,41 @@ fun ManageAddressScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp)
             ) {
-                // Add another address button
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onAddAddress)
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_edit),
-                        contentDescription = "Add",
-                        tint = Color(0xFF6C4DFF),
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "+ Add another address",
-                        fontSize = 15.sp,
-                        color = Color(0xFF6C4DFF),
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Address Cards
-                addresses.forEach { address ->
+                uiState.addresses.forEach { address ->
                     AddressCard(
                         address = address,
-                        onEdit = { onEditAddress(address) },
+                        onEdit = { intent(ManageAddressIntent.EditAddressClicked(address.id)) },
                         onDelete = { showDeleteDialog = address }
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                 }
 
-                // Show sample address if no addresses
-                if (addresses.isEmpty()) {
-                    AddressCard(
-                        address = Address(
-                            id = "1",
-                            label = "Home",
-                            addressLine = "Plot no.209, Kavuri Hills, Madhapur, Telangana 500033",
-                            phone = "+91234567890",
-                            isDefault = false
-                        ),
-                        onEdit = { onEditAddress(it) },
-                        onDelete = { showDeleteDialog = it }
+                if (uiState.addresses.isEmpty()) {
+                    Text(
+                        "No addresses found.",
+                        color = Color.Gray,
+                        modifier = Modifier.padding(16.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(72.dp))
             }
+        }
+
+        FloatingActionButton(
+            onClick = { intent(ManageAddressIntent.AddAddressClicked) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            containerColor = Color(0xFF6C4DFF),
+            contentColor = Color.White
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_plus),
+                contentDescription = "Add Address"
+            )
         }
 
         // Delete Confirmation Dialog
@@ -175,40 +134,24 @@ fun ManageAddressScreen(
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = null },
                 title = {
-                    Text(
-                        "Delete Address",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
+                    Text("Delete Address", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 },
                 text = {
-                    Text(
-                        "Are you sure you want to delete this address?",
-                        fontSize = 15.sp,
-                        color = Color.Gray
-                    )
+                    Text("Are you sure you want to delete this address?", fontSize = 15.sp, color = Color.Gray)
                 },
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            onDeleteAddress(address.id)
+                            intent(ManageAddressIntent.DeleteAddressClicked(address.id))
                             showDeleteDialog = null
                         }
                     ) {
-                        Text(
-                            "Delete",
-                            color = Color.Red,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Text("Delete", color = Color.Red, fontWeight = FontWeight.SemiBold)
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteDialog = null }) {
-                        Text(
-                            "Cancel",
-                            color = Color(0xFF6C4DFF),
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Text("Cancel", color = Color(0xFF6C4DFF), fontWeight = FontWeight.SemiBold)
                     }
                 },
                 containerColor = Color.White,
@@ -220,9 +163,9 @@ fun ManageAddressScreen(
 
 @Composable
 fun AddressCard(
-    address: Address,
-    onEdit: (Address) -> Unit,
-    onDelete: (Address) -> Unit
+    address: SavedAddress,
+    onEdit: (SavedAddress) -> Unit,
+    onDelete: (SavedAddress) -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
@@ -275,7 +218,7 @@ fun AddressCard(
                             modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
-                                painter = painterResource(Res.drawable.ic_edit),
+                                painter = painterResource(Res.drawable.ic_more_vert),
                                 contentDescription = "More",
                                 tint = Color.Gray,
                                 modifier = Modifier.size(20.dp)
@@ -322,7 +265,7 @@ fun AddressCard(
                                 },
                                 leadingIcon = {
                                     Icon(
-                                        painter = painterResource(Res.drawable.ic_edit),
+                                        painter = painterResource(Res.drawable.ic_delete),
                                         contentDescription = "Delete",
                                         tint = Color.Red,
                                         modifier = Modifier.size(20.dp)
@@ -337,18 +280,30 @@ fun AddressCard(
 
                 // Address Details
                 Text(
-                    address.addressLine,
+                    buildString {
+                        if (address.houseNumber.isNotBlank()) {
+                            append(address.houseNumber)
+                        }
+                        if (address.street.isNotBlank()) {
+                            if (isNotBlank()) append(", ")
+                            append(address.street)
+                        }
+                        if (address.city.isNotBlank()) {
+                            if (isNotBlank()) append(", ")
+                            append(address.city)
+                        }
+                        if (address.state.isNotBlank()) {
+                            if (isNotBlank()) append(", ")
+                            append(address.state)
+                        }
+                        if (address.landmark.isNotBlank()) {
+                            if (isNotBlank()) append(", ")
+                            append(address.landmark)
+                        }
+                    },
                     fontSize = 14.sp,
                     color = Color.Gray,
                     lineHeight = 20.sp
-                )
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    "Ph: ${address.phone}",
-                    fontSize = 14.sp,
-                    color = Color.Gray
                 )
             }
         }
@@ -358,15 +313,5 @@ fun AddressCard(
 @Preview
 @Composable
 fun ManageAddressScreenPreview() {
-    ManageAddressScreen(
-        addresses = listOf(
-            Address(
-                id = "1",
-                label = "Home",
-                addressLine = "Plot no.209, Kavuri Hills, Madhapur, Telangana 500033",
-                phone = "+91234567890",
-                isDefault = false
-            )
-        )
-    )
+    ManageAddressScreen()
 }

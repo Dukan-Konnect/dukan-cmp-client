@@ -3,9 +3,26 @@ package org.example.project.home.presentation.viewmodels
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.example.project.home.domain.usecase.CartUseCases
+import org.example.project.core.datastore.UserPreferencesRepository
+
+sealed interface ProfileIntent {
+    data object LogoutClicked : ProfileIntent
+    data object ManageAddressClicked : ProfileIntent
+}
+
+sealed interface ProfileEffect {
+    data object NavigateToManageAddress : ProfileEffect
+}
 
 @Immutable
 data class ProfileUiState(
@@ -16,48 +33,66 @@ data class ProfileUiState(
 )
 
 class ProfileViewModel(
-    private val cartUseCases: CartUseCases
+    private val preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileUiState())
     val state: StateFlow<ProfileUiState> = _state.asStateFlow()
 
+    private val _effect = MutableSharedFlow<ProfileEffect>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val effect: SharedFlow<ProfileEffect> = _effect.asSharedFlow()
+
     init {
         loadUserProfile()
+    }
+
+    fun handleIntent(intent: ProfileIntent) {
+        when (intent) {
+            ProfileIntent.LogoutClicked -> handleLogout()
+            ProfileIntent.ManageAddressClicked -> emitEffect(ProfileEffect.NavigateToManageAddress)
+        }
+    }
+
+    private fun emitEffect(effect: ProfileEffect) {
+        viewModelScope.launch {
+            _effect.emit(effect)
+        }
+    }
+
+    private fun handleLogout() {
+        viewModelScope.launch {
+            preferencesRepository.logOut()
+        }
     }
 
     private fun loadUserProfile() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
 
-            cartUseCases.observeCartData()
-                .catch { error ->
-                    _state.update { it.copy(isLoading = false) }
+            preferencesRepository.userData.collectLatest { userData ->
+                _state.update {
+                    it.copy(
+                        name = userData.name.ifBlank { null },
+                        phoneNumber = userData.phoneNumber.ifBlank { null },
+                        address = userData.address.ifBlank { null },
+                        isLoading = false
+                    )
                 }
-                .collect { cartData ->
-                    _state.update {
-                        it.copy(
-                            name = cartData.summary?.name,
-                            phoneNumber = cartData.summary?.phoneNumber,
-                            address = cartData.summary?.address,
-                            isLoading = false
-                        )
-                    }
-                }
+            }
         }
     }
 
     fun updateProfile(name: String, phoneNumber: String) {
         viewModelScope.launch {
             try {
-                cartUseCases.updateUserInfo(
-                    name = name.trim(),
-                    phoneNumber = phoneNumber.removePrefix("+91").trim()
-                )
-            } catch (e: Exception) {
+                preferencesRepository.updateName(name.trim())
+                preferencesRepository.updatePhoneNumber(phoneNumber.removePrefix("+91").trim())
+            } catch (_: Exception) {
                 // Handle error
             }
         }
     }
 }
-

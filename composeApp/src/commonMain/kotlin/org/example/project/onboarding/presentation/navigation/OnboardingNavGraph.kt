@@ -3,11 +3,14 @@ package org.example.project.onboarding.presentation.navigation
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navigation
+import kotlinx.coroutines.launch
+import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.navigation.HomeRoute
 import org.example.project.core.navigation.OnboardingRoute
 import org.example.project.onboarding.presentation.screens.LocationFetchScreenWithPermissions
@@ -16,6 +19,7 @@ import org.example.project.onboarding.presentation.screens.NameCaptureScreen
 import org.example.project.onboarding.presentation.screens.OTPScreen
 import org.example.project.onboarding.presentation.screens.OnboardingScreen
 import org.example.project.onboarding.presentation.viewmodel.AuthViewModel
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 fun NavController.navigateToAuthGraph() {
@@ -38,16 +42,27 @@ fun NavController.navigateToLocationFetchScreen() = navigate(LocationFetchRoute)
 fun NavGraphBuilder.onboardingDestination(navController: NavController) {
     composable<OnboardingRoute> {
         var currentPage by remember { mutableIntStateOf(0) }
+
+        val userPreferences: UserPreferencesRepository = koinInject()
+        val scope = rememberCoroutineScope()
         OnboardingScreen(
             currentPage = currentPage,
             onNextClick = {
                 if (currentPage < 2) {
                     currentPage++
                 } else {
-                    navController.navigateToAuthGraph()
+                    scope.launch {
+                        userPreferences.setOnboardingCompleted(true)
+                        navController.navigateToAuthGraph()
+                    }
                 }
             },
-            onSkipClick = navController::navigateToAuthGraph
+            onSkipClick = {
+                scope.launch {
+                    userPreferences.setOnboardingCompleted(true)
+                    navController.navigateToAuthGraph()
+                }
+            }
         )
     }
 }

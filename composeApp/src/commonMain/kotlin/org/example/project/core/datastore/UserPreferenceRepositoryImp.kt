@@ -40,6 +40,10 @@ class UserPreferencesRepositoryImpl(
         localDataSource.clearUserData()
     }
 
+    override suspend fun setOnboardingCompleted(completed: Boolean) {
+        localDataSource.setOnboardingCompleted(completed)
+    }
+
     override  fun getUserData(): Flow<UserData> {
         return localDataSource.userData
     }

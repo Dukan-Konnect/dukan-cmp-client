@@ -16,6 +16,8 @@ interface UserPreferencesRepository {
 
     suspend fun logOut()
 
+    suspend fun setOnboardingCompleted(completed: Boolean)
+
      fun getUserData(): Flow<UserData>
 
 

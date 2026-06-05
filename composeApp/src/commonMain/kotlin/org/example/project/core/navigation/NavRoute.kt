@@ -18,4 +18,8 @@ object BookingsRoute
 @Serializable
 object ProfileRoute
 
+@Serializable
+object ManageAddressRoute
 
+@Serializable
+data class EditAddressRoute(val addressId: String = "")

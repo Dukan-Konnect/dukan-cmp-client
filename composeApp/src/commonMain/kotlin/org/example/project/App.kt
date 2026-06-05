@@ -10,9 +10,9 @@ import androidx.compose.ui.Modifier
 import coil3.compose.setSingletonImageLoaderFactory
 import org.example.project.core.datastore.UserPreferencesDataSource
 import org.example.project.core.navigation.AppNavGraph
-import org.example.project.core.navigation.HomeRoute
 import org.example.project.core.navigation.OnboardingRoute
 import org.example.project.core.utils.createImageLoader
+import org.example.project.onboarding.presentation.navigation.AuthRoute
 import org.example.project.onboarding.presentation.navigation.LocationFetchRoute
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
@@ -28,7 +28,11 @@ fun App() {
 
         val userData by userPreferences.userData.collectAsState()
 
-        val start = if (userData.isLoggedIn) LocationFetchRoute else OnboardingRoute
+        val start = when {
+            userData.isLoggedIn -> LocationFetchRoute
+            userData.hasSeenOnboarding -> AuthRoute
+            else -> OnboardingRoute
+        }
 
         Box(modifier = Modifier.fillMaxSize()) {
             AppNavGraph(startDestination = start)

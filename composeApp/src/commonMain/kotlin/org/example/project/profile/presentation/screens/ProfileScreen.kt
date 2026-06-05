@@ -1,21 +1,39 @@
 package org.example.project.profile.presentation.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +46,9 @@ import dukaankonnect.composeapp.generated.resources.ic_logout
 import dukaankonnect.composeapp.generated.resources.ic_person_large
 import dukaankonnect.composeapp.generated.resources.ic_share
 import dukaankonnect.composeapp.generated.resources.ic_star
+import kotlinx.coroutines.launch
+import org.example.project.home.presentation.viewmodels.ProfileEffect
+import org.example.project.home.presentation.viewmodels.ProfileIntent
 import org.example.project.home.presentation.viewmodels.ProfileViewModel
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
@@ -37,9 +58,22 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel = koinViewModel(),
-    onEditProfileClick: () -> Unit = {}
+    onEditProfileClick: () -> Unit = {},
+    onNavigateToManageAddress: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsState()
+    val intent: (ProfileIntent) -> Unit = viewModel::handleIntent
+
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                ProfileEffect.NavigateToManageAddress -> onNavigateToManageAddress() // Added
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -134,7 +168,7 @@ fun ProfileScreen(
             ProfileMenuItem(
                 icon = Res.drawable.ic_address,
                 title = "Manage Address",
-                onClick = { /* TODO */ }
+                onClick = { intent(ProfileIntent.ManageAddressClicked) }
             )
 
             Divider(
@@ -146,7 +180,12 @@ fun ProfileScreen(
             ProfileMenuItem(
                 icon = Res.drawable.ic_share,
                 title = "Refer & Earn",
-                onClick = { /* TODO */ }
+                onClick = {
+                    scope.launch {
+                        
+                        snackbarHostState.showSnackbar(message = "Thank you for using DukaanKonnect")
+                    }
+                }
             )
 
             Divider(
@@ -182,7 +221,7 @@ fun ProfileScreen(
             ProfileMenuItem(
                 icon = Res.drawable.ic_logout,
                 title = "Logout",
-                onClick = { /* TODO */ }
+                onClick = { intent(ProfileIntent.LogoutClicked) }
             )
 
             Spacer(modifier = Modifier.height(32.dp))

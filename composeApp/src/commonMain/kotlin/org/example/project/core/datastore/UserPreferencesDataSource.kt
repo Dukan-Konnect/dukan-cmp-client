@@ -69,15 +69,24 @@ class UserPreferencesDataSource(
         val updatedData = userData.value.copy(isLoggedIn = isLoggedIn)
         updateUserData(updatedData)
     }
+
+    suspend fun setOnboardingCompleted(completed: Boolean) {
+        val updatedData = userData.value.copy(hasSeenOnboarding = completed)
+        updateUserData(updatedData)
+    }
     suspend fun clearUserData() {
         withContext(Dispatchers.IO) {
-            val defaultData = UserData.DEFAULT
+            val wasOnboardingCompleted = _userData.value.hasSeenOnboarding
+            val clearedData = UserData.DEFAULT.copy(
+                hasSeenOnboarding = wasOnboardingCompleted
+            )
+
             settings.encodeValue(
                 key = USER_DATA_KEY,
                 serializer = UserData.serializer(),
-                value = defaultData
+                value = clearedData
             )
-            _userData.value = defaultData
+            _userData.value = clearedData
         }
     }
 
