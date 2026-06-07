@@ -2,7 +2,6 @@ package org.example.project.home.presentation.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +28,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHost
@@ -55,6 +53,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import dukaankonnect.composeapp.generated.resources.Res
 import dukaankonnect.composeapp.generated.resources.ic_arrow_back
 import dukaankonnect.composeapp.generated.resources.ic_calendar_clock
@@ -63,29 +62,13 @@ import dukaankonnect.composeapp.generated.resources.ic_location
 import dukaankonnect.composeapp.generated.resources.ic_phone
 import dukaankonnect.composeapp.generated.resources.ic_star
 import org.example.project.core.utils.AddressFormatter
+import org.example.project.home.presentation.navigation.SummaryRoute
 import org.example.project.home.presentation.viewmodels.SummaryEffect
 import org.example.project.home.presentation.viewmodels.SummaryEvent
 import org.example.project.home.presentation.viewmodels.SummaryViewModel
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
-
-data class OrderItem(
-    val id: String,
-    val name: String,
-    val price: Int,
-    val image: String,
-    val providerName: String,
-    val providerImage: String,
-    val providerPhone: String,
-    val providerRating: Double,
-    val providerFee: Int
-)
-
-data class PackageService(
-    val name: String,
-    val price: Int
-)
+import kotlinx.coroutines.flow.collect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,12 +76,11 @@ fun SummaryScreen(
     viewModel: SummaryViewModel = koinViewModel(),
     onBack: () -> Unit = {},
     onPay: () -> Unit = {},
-    onEditOrder: (String) -> Unit = {},
-    onCustomisePackage: (String) -> Unit = {},
     onCouponsClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val addressValue = state.address.takeIf { it.isNotBlank() }
 
     var showAddressSheet by remember { mutableStateOf(false) }
     var showTimeSlotSheet by remember { mutableStateOf(false) }
@@ -108,141 +90,74 @@ fun SummaryScreen(
     var paymentAmount by remember { mutableStateOf(0L) }
     var paymentPhoneNumber by remember { mutableStateOf("") }
 
-    // Collect effects and handle navigation
-    LaunchedEffect(Unit) {
+    LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                is SummaryEffect.NavigateBack -> onBack()
+                SummaryEffect.NavigateBack -> onBack()
+                SummaryEffect.NavigateToBookings -> onPay()
                 is SummaryEffect.NavigateToPayment -> {
                     paymentOrderId = effect.orderId
                     paymentAmount = effect.amount
-                    paymentPhoneNumber = state.cartSummary?.phoneNumber ?: ""
+                    paymentPhoneNumber = effect.phoneNumber
                 }
-                is SummaryEffect.ShowMessage -> {
-                    snackbarHostState.showSnackbar(effect.message)
-                }
+
+                is SummaryEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
             }
         }
     }
 
-    // Launch PaymentActivity when orderId is set
     paymentOrderId?.let { orderId ->
         LaunchPaymentActivity(
             orderId = orderId,
             amount = paymentAmount,
             phoneNumber = paymentPhoneNumber,
             onResult = { success ->
+                paymentOrderId = null
                 if (success) {
-                    // Payment successful - save bookings
-                    viewModel.saveBookingsAfterPayment(orderId)
-                    paymentOrderId = null
-                    onPay()
-                } else {
-                    // Payment failed or cancelled
-                    paymentOrderId = null
-                    viewModel.onEvent(SummaryEvent.ErrorDismissed)
+                    viewModel.onEvent(SummaryEvent.PaymentSucceeded(orderId))
                 }
             }
         )
     }
 
-    val orders = state.cartItems.map { cartItem ->
-        // Map CartItem domain model to local OrderItem UI model used in this file
-        OrderItem(
-            id = cartItem.productId,
-            name = cartItem.name,
-            price = (cartItem.priceCents / 100).toInt(),
-            image = cartItem.imageUrl ?: "",
-            providerName = cartItem.providerName,
-            providerImage = cartItem.providerImageUrl,
-            providerPhone = cartItem.providerPhoneNumber,
-            providerRating = cartItem.providerRating,
-            providerFee = (cartItem.providerFeeCents / 100).toInt() // Convert cents to rupees
-        )
-    }
-
-    val totals = state.cartTotals
-    val itemTotal = totals?.itemTotalCents?.let { viewModel.formatPrice(it) }
-        ?: viewModel.formatPrice(orders.sumOf { it.providerFee.toLong() * 100 })
-    val taxAmount = totals?.taxesCents?.let { viewModel.formatPrice(it) } ?: "₹0"
-    val totalAmount = totals?.amountToPayCents?.let { viewModel.formatPrice(it) } ?: itemTotal
-
-    // Handle loading and empty states
-    if (state.isLoading) {
+    val booking = state.booking
+    if (booking == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = Color(0xFF6C4DFF))
+            Text("Booking details are unavailable")
         }
         return
     }
 
-    if (state.isCartEmpty) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_edit),
-                    contentDescription = "Empty cart",
-                    modifier = Modifier.size(64.dp),
-                    tint = Color.Gray
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    "Your cart is empty",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.Gray
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    "Add items to get started",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = onBack,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF))
-                ) {
-                    Text("Browse Services")
-                }
-            }
-        }
-        return
-    }
-
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFFF7F7F7))) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF7F7F7))
+    ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header with Status Bar
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = Color.White,
                 shadowElevation = 2.dp
             ) {
-                Column {
-
-                    // Title Bar
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = {
-                            viewModel.onEvent(SummaryEvent.BackClicked)
-                            onBack()
-                        }) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_arrow_back),
-                                contentDescription = "Back",
-                                tint = Color.Black
-                            )
-                        }
-                        Text(
-                            text = "Summary",
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 20.sp,
-                            color = Color.Black
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { viewModel.onEvent(SummaryEvent.BackClicked) }) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_arrow_back),
+                            contentDescription = "Back",
+                            tint = Color.Black
                         )
                     }
+                    Text(
+                        text = "Summary",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 20.sp,
+                        color = Color.Black
+                    )
                 }
             }
 
@@ -252,38 +167,26 @@ fun SummaryScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(bottom = 120.dp)
             ) {
-
-                // Your orders section
                 Text(
-                    "Your orders",
+                    "Your order",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
 
-                // Order Items
-                orders.forEach { order ->
-                    OrderItemRow(
-                        order = order,
-                        onRemove = {
-                            viewModel.onEvent(SummaryEvent.RemoveItem(order.id))
-                        }
-                    )
-                }
+                OrderItemRow(order = booking)
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Phone row
                 PhoneRow(
-                    name = state.cartSummary?.name ?: "You",
-                    phoneNumber = state.cartSummary?.phoneNumber?.takeIf { it.isNotBlank() } ?: "Add phone number",
+                    name = state.customerName.ifBlank { "You" },
+                    phoneNumber = state.phoneNumber.ifBlank { "Add phone number" },
                     onEditClick = { showPhoneSheet = true }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Payment summary card remains but uses itemTotal / taxAmount / totalAmount
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -300,72 +203,26 @@ fun SummaryScreen(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Item total
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                "Item total",
-                                fontSize = 14.sp,
-                                color = Color.Gray
-                            )
-                            Text(
-                                itemTotal,
-                                fontSize = 14.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-
+                        SummaryRow(
+                            label = "Item total",
+                            value = viewModel.formatPrice(state.itemTotalCents)
+                        )
                         Spacer(modifier = Modifier.height(12.dp))
-
-                        // Tax (5%)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                "Tax (5%)",
-                                fontSize = 14.sp,
-                                color = Color.Gray
-                            )
-                            Text(
-                                taxAmount,
-                                fontSize = 14.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-
+                        SummaryRow(
+                            label = "Tax (5%)",
+                            value = viewModel.formatPrice(state.taxesCents)
+                        )
                         Spacer(modifier = Modifier.height(12.dp))
-
-                        // Total amount (final amount including taxes)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                "Total amount",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.Black
-                            )
-                            Text(
-                                totalAmount,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Color.Black
-                            )
-                        }
+                        SummaryRow(
+                            label = "Total amount",
+                            value = viewModel.formatPrice(state.amountToPayCents),
+                            highlight = true
+                        )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(96.dp))
             }
         }
 
-        // Bottom bar overlay
         Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -378,10 +235,9 @@ fun SummaryScreen(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                val addressText = AddressFormatter.formatFullAddress(state.cartSummary?.address)
-                val timeSlotText = state.cartSummary?.timeSlot
+                val addressText = AddressFormatter.formatFullAddress(addressValue)
+                val timeSlotText = state.timeSlot
 
-                // Address row
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -395,7 +251,7 @@ fun SummaryScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            painter = painterResource(Res.drawable.ic_location), // address icon
+                            painter = painterResource(Res.drawable.ic_location),
                             contentDescription = "Address",
                             tint = Color.Black,
                             modifier = Modifier.size(20.dp)
@@ -422,7 +278,6 @@ fun SummaryScreen(
                     }
                 }
 
-                // Time slot row (only when selected)
                 if (!timeSlotText.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(
@@ -484,12 +339,27 @@ fun SummaryScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF))
                 ) {
                     Text(
-                        text = if (hasTimeSlot) "Pay $totalAmount" else "Select time slot",
+                        text = if (hasTimeSlot) {
+                            "Pay ${viewModel.formatPrice(state.amountToPayCents)}"
+                        } else {
+                            "Select time slot"
+                        },
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White,
                         fontSize = 16.sp
                     )
                 }
+            }
+        }
+
+        if (state.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0x66000000)),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color.White)
             }
         }
 
@@ -500,7 +370,6 @@ fun SummaryScreen(
                 .padding(16.dp)
         )
 
-        // Address Bottom Sheet
         if (showAddressSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showAddressSheet = false },
@@ -508,12 +377,11 @@ fun SummaryScreen(
                 containerColor = Color.White
             ) {
                 AddAddressBottomSheetContent(
-                    currentAddress = state.cartSummary?.address,
+                    currentAddress = addressValue,
                     onSave = { newAddress ->
                         viewModel.onEvent(SummaryEvent.UpdateAddress(newAddress))
                         showAddressSheet = false
-                        // After saving address, optionally open time slot selector
-                        if (state.cartSummary?.timeSlot.isNullOrBlank()) {
+                        if (state.timeSlot.isNullOrBlank()) {
                             showTimeSlotSheet = true
                         }
                     },
@@ -522,7 +390,6 @@ fun SummaryScreen(
             }
         }
 
-        // Time Slot Bottom Sheet
         if (showTimeSlotSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showTimeSlotSheet = false },
@@ -530,7 +397,7 @@ fun SummaryScreen(
                 containerColor = Color.White
             ) {
                 SelectTimeSlotBottomSheetContent(
-                    currentTimeSlot = state.cartSummary?.timeSlot,
+                    currentTimeSlot = state.timeSlot,
                     onSelect = { selectedSlot ->
                         viewModel.onEvent(SummaryEvent.UpdateTimeSlot(selectedSlot))
                         showTimeSlotSheet = false
@@ -540,7 +407,6 @@ fun SummaryScreen(
             }
         }
 
-        // Phone Number Bottom Sheet
         if (showPhoneSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showPhoneSheet = false },
@@ -548,11 +414,11 @@ fun SummaryScreen(
                 containerColor = Color.White
             ) {
                 EditPhoneBottomSheetContent(
-                    currentPhoneNumber = state.cartSummary?.phoneNumber ?: "",
-                    currentName = state.cartSummary?.name,
+                    currentPhoneNumber = state.phoneNumber,
+                    currentName = state.customerName,
                     onSave = { newPhone, newName ->
                         viewModel.onEvent(SummaryEvent.UpdatePhoneNumber(newPhone))
-                        // TODO: add event to store name when backend/storage is ready
+                        viewModel.onEvent(SummaryEvent.UpdateName(newName))
                         showPhoneSheet = false
                     },
                     onDismiss = { showPhoneSheet = false }
@@ -563,10 +429,7 @@ fun SummaryScreen(
 }
 
 @Composable
-fun OrderItemRow(
-    order: OrderItem,
-    onRemove: () -> Unit = {}
-) {
+private fun OrderItemRow(order: SummaryRoute) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -575,102 +438,71 @@ fun OrderItemRow(
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Service info row with Remove button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = order.subServiceImage,
+                    contentDescription = order.subServiceTitle,
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = order.name,
+                        text = order.subServiceTitle,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.Black
                     )
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = order.serviceTitle,
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = "₹ ${order.providerFee}",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
-                    OutlinedButton(
-                        onClick = onRemove,
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFFE53935)
-                        ),
-                        border = BorderStroke(1.dp, Color(0xFFE53935)),
-                        shape = RoundedCornerShape(6.dp),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                        modifier = Modifier.height(32.dp)
-                    ) {
-                        Text(
-                            "Remove",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Provider info row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Provider Image
-                    coil3.compose.AsyncImage(
-                        model = order.providerImage,
-                        contentDescription = order.providerName,
-                        modifier = Modifier
-                            .width(45.dp)
-                            .height(60.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Fit
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                AsyncImage(
+                    model = order.providerImageUrl,
+                    contentDescription = order.providerName,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(20.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = order.providerName,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black
                     )
-
-                    // Provider Info
-                    Column {
-                        Text(
-                            order.providerName,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 13.sp,
-                            color = Color.Black
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_star),
+                            contentDescription = "Rating",
+                            tint = Color(0xFFFFA000),
+                            modifier = Modifier.size(12.dp)
                         )
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            order.providerPhone,
-                            fontSize = 10.sp,
+                            text = order.providerRating.toString(),
+                            fontSize = 12.sp,
                             color = Color.Gray
                         )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_star),
-                                contentDescription = "Rating",
-                                tint = Color(0xFFFFA000),
-                                modifier = Modifier.size(10.dp)
-                            )
-                            Text(
-                                order.providerRating.toString(),
-                                fontSize = 11.sp,
-                                color = Color.Gray
-                            )
-                        }
                     }
                 }
             }
@@ -679,550 +511,205 @@ fun OrderItemRow(
 }
 
 @Composable
-fun PhoneRow(
+private fun SummaryRow(
+    label: String,
+    value: String,
+    highlight: Boolean = false
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            fontWeight = if (highlight) FontWeight.SemiBold else FontWeight.Normal,
+            color = if (highlight) Color.Black else Color.Gray
+        )
+        Text(
+            text = value,
+            fontSize = 14.sp,
+            fontWeight = if (highlight) FontWeight.SemiBold else FontWeight.Medium,
+            color = Color.Black
+        )
+    }
+}
+
+@Composable
+private fun PhoneRow(
     name: String,
     phoneNumber: String,
     onEditClick: () -> Unit
 ) {
-    val displayNumber = if (phoneNumber.length == 10 && phoneNumber.all { it.isDigit() }) {
-        "+91-$phoneNumber"
-    } else {
-        phoneNumber
-    }
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .clickable { onEditClick() },
+            .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_phone), // phone icon
-                    contentDescription = "Phone",
-                    tint = Color.Black,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "$name, $displayNumber",
-                    fontSize = 15.sp,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            TextButton(onClick = onEditClick) {
-                Text(
-                    text = "Change",
-                    color = Color(0xFF6C4DFF),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun AddAddressBottomSheetContent(
-    currentAddress: String?,
-    onSave: (String) -> Unit,
-    onDismiss: () -> Unit
-) {
-    // Initialize from currentAddress by attempting to split into parts: house, street, landmark
-    var houseNumber by remember { mutableStateOf("") }
-    var landmark by remember { mutableStateOf("") }
-    var streetAddress by remember { mutableStateOf("") }
-
-    LaunchedEffect(currentAddress) {
-        currentAddress?.let { full ->
-            val parts = full.split(",").map { it.trim() }.filter { it.isNotEmpty() }
-            when (parts.size) {
-                0 -> {}
-                1 -> streetAddress = parts[0]
-                2 -> {
-                    houseNumber = parts[0]
-                    streetAddress = parts[1]
-                }
-                else -> {
-                    houseNumber = parts[0]
-                    streetAddress = parts[1]
-                    // Everything after first two parts is treated as landmark/extra info
-                    landmark = parts.drop(2).joinToString(", ")
-                }
-            }
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp)
-    ) {
-        Text(
-            "Add Delivery Address",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
-        )
-        Spacer(modifier = Modifier.height(20.dp))
-
-        OutlinedTextField(
-            value = streetAddress,
-            onValueChange = { streetAddress = it },
-            label = { Text("Street Address") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF6C4DFF),
-                unfocusedBorderColor = Color(0xFFE0E0E0),
-                focusedLabelColor = Color(0xFF6C4DFF)
-            ),
-            shape = RoundedCornerShape(8.dp)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = houseNumber,
-            onValueChange = { houseNumber = it },
-            label = { Text("House/Flat Number") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF6C4DFF),
-                unfocusedBorderColor = Color(0xFFE0E0E0),
-                focusedLabelColor = Color(0xFF6C4DFF)
-            ),
-            shape = RoundedCornerShape(8.dp)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = landmark,
-            onValueChange = { landmark = it },
-            label = { Text("Landmark (Optional)") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF6C4DFF),
-                unfocusedBorderColor = Color(0xFFE0E0E0),
-                focusedLabelColor = Color(0xFF6C4DFF)
-            ),
-            shape = RoundedCornerShape(8.dp)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            OutlinedButton(
-                onClick = onDismiss,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color(0xFF6C4DFF)
-                ),
-                border = BorderStroke(1.dp, Color(0xFF6C4DFF))
-            ) {
-                Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            }
-
-            Button(
-                onClick = {
-                    val fullAddress = buildString {
-                        if (houseNumber.isNotBlank()) append("$houseNumber, ")
-                        append(streetAddress)
-                        if (landmark.isNotBlank()) append(", $landmark")
-                    }
-                    onSave(fullAddress)
-                },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF6C4DFF)
-                ),
-                enabled = streetAddress.isNotBlank()
-            ) {
-                Text("Save", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-    }
-}
-
-@Composable
-fun EditPhoneBottomSheetContent(
-    currentPhoneNumber: String,
-    currentName: String?,
-    onSave: (String, String?) -> Unit,
-    onDismiss: () -> Unit
-) {
-    var phoneNumber by remember { mutableStateOf(currentPhoneNumber) }
-    var name by remember { mutableStateOf(currentName.orEmpty()) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(top = 24.dp, bottom = 32.dp)
-    ) {
-        // Header with close button
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    "Contact for booking updates",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    "Professional will contact at this number, and a tracking link will be shared",
-                    fontSize = 14.sp,
-                    color = Color.Gray,
-                    lineHeight = 20.sp
-                )
+            Icon(
+                painter = painterResource(Res.drawable.ic_phone),
+                contentDescription = "Phone",
+                tint = Color.Black,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(name, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                Text(phoneNumber, fontSize = 13.sp, color = Color.Gray)
             }
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_edit),
-                    contentDescription = "Close",
-                    tint = Color.Black
-                )
+            TextButton(onClick = onEditClick) {
+                Text("Edit")
             }
         }
+    }
+}
 
-        Spacer(modifier = Modifier.height(24.dp))
+@Composable
+private fun EditPhoneBottomSheetContent(
+    currentPhoneNumber: String,
+    currentName: String,
+    onSave: (String, String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var name by remember(currentName) { mutableStateOf(currentName) }
+    var phone by remember(currentPhoneNumber) { mutableStateOf(currentPhoneNumber) }
 
-        // Phone number input with country code
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-
-            OutlinedTextField(
-                value = "+91",
-                onValueChange = { },
-                readOnly = true,
-                label = { Text("") },
-                modifier = Modifier
-                    .width(70.dp)
-                    .padding(horizontal = 2.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF6C4DFF),
-                    unfocusedBorderColor = Color(0xFFE0E0E0),
-                    focusedLabelColor = Color(0xFF6C4DFF)
-                ),
-            )
-
-            // Phone number input
-            OutlinedTextField(
-                value = phoneNumber,
-                onValueChange = {
-                    // Only allow digits and limit to 10 characters
-                    if (it.length <= 10 && it.all { char -> char.isDigit() }) {
-                        phoneNumber = it
-                    }
-                },
-                modifier = Modifier.weight(1f),
-                label = { Text("Number") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF6C4DFF),
-                    unfocusedBorderColor = Color(0xFFE0E0E0),
-                    focusedLabelColor = Color(0xFF6C4DFF)
-                ),
-                shape = RoundedCornerShape(8.dp),
-                trailingIcon = {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_edit), // contact icon
-                        contentDescription = "Contact",
-                        tint = Color.Gray,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            )
-        }
-
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text("Contact details", fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Name input
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
             label = { Text("Name") },
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF6C4DFF),
-                unfocusedBorderColor = Color(0xFFE0E0E0),
-                focusedLabelColor = Color(0xFF6C4DFF)
-            ),
-            shape = RoundedCornerShape(8.dp)
+            colors = OutlinedTextFieldDefaults.colors()
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // Save button
-        Button(
-            onClick = {
-                if (phoneNumber.length == 10) {
-                    onSave(phoneNumber, name.ifBlank { null })
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF6C4DFF)
-            ),
-            enabled = phoneNumber.length == 10
-        ) {
-            Text(
-                "Save details",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+        OutlinedTextField(
+            value = phone,
+            onValueChange = { phone = it.filter(Char::isDigit).take(10) },
+            label = { Text("Phone number") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(
+                onClick = { onSave(phone, name) },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF))
+            ) {
+                Text("Save")
+            }
+
+            TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                Text("Cancel")
+            }
         }
     }
 }
 
 @Composable
-fun SelectTimeSlotBottomSheetContent(
+private fun AddAddressBottomSheetContent(
+    currentAddress: String?,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var address by remember(currentAddress) { mutableStateOf(currentAddress.orEmpty()) }
+
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text("Delivery address", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = address,
+            onValueChange = { address = it },
+            label = { Text("Address") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+            colors = OutlinedTextFieldDefaults.colors()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Button(
+                onClick = { onSave(address) },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF))
+            ) {
+                Text("Save")
+            }
+
+            TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                Text("Cancel")
+            }
+        }
+    }
+}
+
+@Composable
+private fun SelectTimeSlotBottomSheetContent(
     currentTimeSlot: String?,
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var selectedDate by remember { mutableStateOf(0) }
-    var selectedTimeSlot by remember { mutableStateOf(currentTimeSlot) }
-
-    val dates = listOf(
-        DateOption("Today", 14, "Nov"),
-        DateOption("Tomorrow", 15, "Nov"),
-        DateOption("Sat", 16, "Nov")
+    val slots = listOf(
+        "Today, 10:00 AM - 12:00 PM",
+        "Today, 1:00 PM - 3:00 PM",
+        "Tomorrow, 10:00 AM - 12:00 PM",
+        "Tomorrow, 4:00 PM - 6:00 PM"
     )
+    var selectedSlot by remember(currentTimeSlot) { mutableStateOf(currentTimeSlot) }
 
-    val timeSlots = listOf(
-        listOf("08:00 AM", "08:30 AM", "09:00 AM"),
-        listOf("09:30 AM", "10:00 AM", "10:30 AM"),
-        listOf("11:00 AM", "11:30 AM", "12:00 PM"),
-        listOf("12:30 PM", "01:00 PM", "01:30 PM")
-    )
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text("Select time slot", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(16.dp))
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
-        Text(
-            "Select Time Slot",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            "Your service will take approx. 2 hrs",
-            fontSize = 14.sp,
-            color = Color.Gray
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Date Selection
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            dates.forEachIndexed { index, date ->
-                DateCard(
-                    date = date,
-                    isSelected = selectedDate == index,
-                    onClick = { selectedDate = index },
-                    modifier = Modifier.weight(1f)
+        slots.forEach { slot ->
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+                    .clickable { selectedSlot = slot },
+                shape = RoundedCornerShape(12.dp),
+                color = if (selectedSlot == slot) Color(0xFFECE7FF) else Color.White,
+                border = BorderStroke(1.dp, if (selectedSlot == slot) Color(0xFF6C4DFF) else Color(0xFFE0E0E0))
+            ) {
+                Text(
+                    text = slot,
+                    modifier = Modifier.padding(16.dp),
+                    color = Color.Black
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            "Available time slots",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color.Black
-        )
-
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Time Slots Grid
-        timeSlots.forEach { rowSlots ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                rowSlots.forEach { slot ->
-                    TimeSlotChip(
-                        time = slot,
-                        isSelected = selectedTimeSlot == slot,
-                        onClick = { selectedTimeSlot = slot },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            OutlinedButton(
-                onClick = onDismiss,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color(0xFF6C4DFF)
-                ),
-                border = BorderStroke(1.dp, Color(0xFF6C4DFF))
-            ) {
-                Text("Cancel", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            }
-
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(
-                onClick = {
-                    selectedTimeSlot?.let { slot ->
-                        val dateLabel = dates[selectedDate]
-                        val fullSlot = "${dateLabel.day}, ${dateLabel.date} ${dateLabel.month} - $slot"
-                        onSelect(fullSlot)
-                    }
-                },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp),
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF6C4DFF)
-                ),
-                enabled = selectedTimeSlot != null
+                onClick = { selectedSlot?.let(onSelect) },
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF))
             ) {
-                Text("Confirm", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                Text("Confirm")
+            }
+
+            TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                Text("Cancel")
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
     }
-}
-
-@Composable
-fun TimeSlotChip(
-    time: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (isSelected) Color(0xFFEDE7F6) else Color.White)
-            .border(
-                width = 1.5.dp,
-                color = if (isSelected) Color(0xFF6C4DFF) else Color(0xFFE0E0E0),
-                shape = RoundedCornerShape(8.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 8.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            time,
-            fontSize = 14.sp,
-            color = if (isSelected) Color(0xFF6C4DFF) else Color.Black,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
-        )
-    }
-}
-
-
-
-@Composable
-fun DateCard(
-    date: DateOption,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(
-                if (isSelected) Color(0xFFEDE7F6)
-                else Color.White
-            )
-            .border(
-                width = 2.dp,
-                color = if (isSelected) Color(0xFF6C4DFF) else Color(0xFFE0E0E0),
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clickable(onClick = onClick)
-            .padding(vertical = 16.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                date.day,
-                fontSize = 13.sp,
-                color = if (isSelected) Color(0xFF6C4DFF) else Color.Gray,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                date.date.toString(),
-                fontSize = 24.sp,
-                color = if (isSelected) Color(0xFF6C4DFF) else Color.Black,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
-@Preview
-@Composable
-fun SummaryScreenPreview() {
-    SummaryScreen(onBack = {}, onPay = {})
 }

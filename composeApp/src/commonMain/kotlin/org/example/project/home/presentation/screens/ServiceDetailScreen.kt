@@ -1,16 +1,41 @@
 package org.example.project.home.presentation.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,9 +55,9 @@ import dukaankonnect.composeapp.generated.resources.ic_edit
 import dukaankonnect.composeapp.generated.resources.ic_star
 import org.example.project.home.domain.model.CategoryItem
 import org.example.project.home.domain.model.ServiceDetails
-import org.example.project.home.domain.model.ServiceSection
-import org.example.project.home.domain.model.SubService
 import org.example.project.home.domain.model.ServiceProvider
+import org.example.project.home.domain.model.SubService
+import org.example.project.home.presentation.navigation.SummaryRoute
 import org.example.project.home.presentation.viewmodels.ServiceDetailsEffect
 import org.example.project.home.presentation.viewmodels.ServiceDetailsEvent
 import org.example.project.home.presentation.viewmodels.ServiceDetailsUiState
@@ -40,41 +65,32 @@ import org.example.project.home.presentation.viewmodels.ServiceDetailsViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
+import kotlinx.coroutines.flow.collect
 
 @Composable
 fun ServiceDetailScreen(
-    serviceId: Long = 1L,
     onBackClick: () -> Unit = {},
     onSubServiceClick: (String) -> Unit = {},
-    onNavigateToSummary: () -> Unit = {},
+    onNavigateToSummary: (SummaryRoute) -> Unit = {},
     viewModel: ServiceDetailsViewModel = koinViewModel()
 ) {
     val uiState by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Load service details on first composition
-    LaunchedEffect(serviceId) {
-        viewModel.onEvent(ServiceDetailsEvent.LoadService(serviceId))
-    }
-
-    // Collect one-off effects
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
                 ServiceDetailsEffect.NavigateBack -> onBackClick()
                 is ServiceDetailsEffect.NavigateToSubServiceDetails -> onSubServiceClick(effect.subServiceId)
-                ServiceDetailsEffect.NavigateToSummary -> onNavigateToSummary()
+                is ServiceDetailsEffect.NavigateToSummary -> onNavigateToSummary(effect.route)
                 is ServiceDetailsEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
             }
         }
     }
 
-    // Intent dispatcher
-    val intent: (ServiceDetailsEvent) -> Unit = viewModel::onEvent
-
     ServiceDetailsScreenContent(
         uiState = uiState,
-        intent = intent,
+        intent = viewModel::onEvent,
         snackbarHostState = snackbarHostState
     )
 }
@@ -83,9 +99,8 @@ fun ServiceDetailScreen(
 fun ServiceDetailsScreenContent(
     uiState: ServiceDetailsUiState,
     intent: (ServiceDetailsEvent) -> Unit,
-    snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
+    snackbarHostState: SnackbarHostState
 ) {
-    // Track expanded state for each section by section ID
     val expandedSections = remember { mutableStateMapOf<String, Boolean>() }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -94,7 +109,6 @@ fun ServiceDetailsScreenContent(
                 .fillMaxSize()
                 .background(Color(0xFFF7F7F7))
         ) {
-            // Loading indicator
             if (uiState.isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -105,53 +119,57 @@ fun ServiceDetailsScreenContent(
                 return@Column
             }
 
-            // Error state
             uiState.errorMessage?.let { error ->
-                Snackbar(
-                    modifier = Modifier.padding(16.dp),
-                    action = {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    color = Color(0xFFFFF3F0),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = error,
+                            modifier = Modifier.weight(1f),
+                            color = Color(0xFF8A1C13)
+                        )
                         TextButton(onClick = { intent(ServiceDetailsEvent.Retry) }) {
                             Text("Retry")
                         }
-                    },
-                    dismissAction = {
-                        TextButton(onClick = { intent(ServiceDetailsEvent.ErrorDismissed) }) {
-                            Text("Dismiss")
-                        }
                     }
-                ) { Text(error) }
+                }
             }
 
             val serviceDetails = uiState.serviceDetails ?: return@Column
 
-            // Header
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = Color.White,
                 shadowElevation = 2.dp
             ) {
-                Column {
-                    // Title Bar
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = { intent(ServiceDetailsEvent.BackClicked) }) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_arrow_back),
-                                contentDescription = "Back",
-                                tint = Color.Black
-                            )
-                        }
-                        Text(
-                            text = serviceDetails.title,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 18.sp,
-                            color = Color.Black
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = { intent(ServiceDetailsEvent.BackClicked) }) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_arrow_back),
+                            contentDescription = "Back",
+                            tint = Color.Black
                         )
                     }
+                    Text(
+                        text = serviceDetails.title,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 18.sp,
+                        color = Color.Black
+                    )
                 }
             }
 
@@ -159,138 +177,10 @@ fun ServiceDetailsScreenContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(bottom = 80.dp)
+                    .padding(bottom = 100.dp)
             ) {
-                // Banner Image
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(180.dp)
-                ) {
+                ServiceHeader(serviceDetails)
 
-                    AsyncImage(
-                        model = serviceDetails.bannerImage,
-                        contentDescription = serviceDetails.bannerTitle,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-
-
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            serviceDetails.bannerTitle,
-                            color = Color.White,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-
-                // Service Info Card
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    color = Color.White,
-                    shape = RoundedCornerShape(12.dp),
-                    shadowElevation = 2.dp
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                serviceDetails.title,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.Black
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_star),
-                                contentDescription = "Rating",
-                                tint = Color(0xFFFFA000),
-                                modifier = Modifier.size(12.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                "4.7(3k)",//serviceDetails.ratingText,
-                                fontSize = 14.sp,
-                                color = Color.Black
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_calendar),
-                                contentDescription = "Calendar",
-                                tint = Color.Gray,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                serviceDetails.bookingsText,
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        }
-
-                        // Custom Package Card
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFE8F5E9), RoundedCornerShape(8.dp))
-                                .clickable { }
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    painter = painterResource(Res.drawable.ic_edit),
-                                    contentDescription = "Package",
-                                    tint = Color(0xFF00C853),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        "Create a Custom Package",
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = Color.Black
-                                    )
-                                    Text(
-                                        "Specifically for your needs",
-                                        fontSize = 12.sp,
-                                        color = Color.Gray
-                                    )
-                                }
-                            }
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_edit),
-                                contentDescription = "Arrow",
-                                tint = Color.Gray,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                }
-
-                // Categories Section
                 if (serviceDetails.categories.isNotEmpty()) {
                     Surface(
                         modifier = Modifier
@@ -316,12 +206,9 @@ fun ServiceDetailsScreenContent(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
                                 serviceDetails.categories.forEach { category ->
-                                    CategoryItem(
+                                    CategoryCard(
                                         category = category,
-                                        onClick = {
-                                            // Open the corresponding dropdown section
-                                            expandedSections[category.id] = true
-                                        }
+                                        onClick = { expandedSections[category.id] = true }
                                     )
                                 }
                             }
@@ -329,9 +216,6 @@ fun ServiceDetailsScreenContent(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Service Sections
                 uiState.filteredSections.forEach { section ->
                     ExpandableServiceSection(
                         title = section.title,
@@ -339,19 +223,26 @@ fun ServiceDetailsScreenContent(
                         onExpandChange = { expandedSections[section.id] = it }
                     ) {
                         section.items.forEach { subService ->
-                            val selectedProvider = uiState.selectedProviders[subService.id]
-                            val availableProviders = uiState.availableProviders[subService.id]
-                            val isExpanded = uiState.expandedSubservices.contains(subService.id)
+                            val selectedProvider = if (uiState.selectedSubServiceId == subService.id) {
+                                uiState.selectedProvider
+                            } else {
+                                null
+                            }
 
                             SubServiceItem(
                                 subService = subService,
                                 selectedProvider = selectedProvider,
-                                availableProviders = availableProviders,
-                                isExpanded = isExpanded,
-                                onToggleDropdown = { intent(ServiceDetailsEvent.ToggleProviderDropdown(subService.id)) },
-                                onSelectProvider = { provider -> intent(ServiceDetailsEvent.SelectProvider(subService.id, provider)) },
-                                onRemoveProvider = { intent(ServiceDetailsEvent.RemoveProvider(subService.id)) },
-                                onClick = { intent(ServiceDetailsEvent.SubServiceClicked(subService.id)) }
+                                availableProviders = uiState.availableProviders[subService.id],
+                                isExpanded = uiState.expandedSubservices.contains(subService.id),
+                                onToggleDropdown = {
+                                    intent(ServiceDetailsEvent.ToggleProviderDropdown(subService.id))
+                                },
+                                onSelectProvider = { provider ->
+                                    intent(ServiceDetailsEvent.SelectProvider(subService.id, provider))
+                                },
+                                onClick = {
+                                    intent(ServiceDetailsEvent.SubServiceClicked(subService.id))
+                                }
                             )
                         }
                     }
@@ -359,8 +250,7 @@ fun ServiceDetailsScreenContent(
             }
         }
 
-        // Bottom Cart Bar (visible when item count > 0)
-        if (uiState.screenCartItemCount > 0) {
+        if (uiState.hasSelection) {
             Surface(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -377,41 +267,123 @@ fun ServiceDetailsScreenContent(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "₹ ${uiState.screenCartTotalCents / 100}",
+                            text = "₹ ${uiState.selectedProviderFeeCents / 100}",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Color.Black
                         )
                         Text(
-                            text = "${uiState.screenCartItemCount} Item${if (uiState.screenCartItemCount == 1) "" else "s"}",
+                            text = uiState.selectedProvider?.name.orEmpty(),
                             fontSize = 12.sp,
                             color = Color.Gray
                         )
                     }
                     Button(
-                        onClick = { intent(ServiceDetailsEvent.ViewCartClicked) },
+                        onClick = { intent(ServiceDetailsEvent.BookNowClicked) },
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF)),
                         shape = RoundedCornerShape(12.dp),
                         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
                     ) {
-                        Text("View Cart", color = Color.White, fontWeight = FontWeight.SemiBold)
+                        Text("Continue", color = Color.White, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
         }
 
-        // Snackbar host
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = if (uiState.screenCartItemCount > 0) 72.dp else 16.dp)
+                .padding(bottom = if (uiState.hasSelection) 72.dp else 16.dp)
         )
     }
 }
 
 @Composable
-fun CategoryItem(
+private fun ServiceHeader(serviceDetails: ServiceDetails) {
+    Column {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+        ) {
+            AsyncImage(
+                model = serviceDetails.bannerImage,
+                contentDescription = serviceDetails.bannerTitle,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+            ) {
+                Text(
+                    serviceDetails.bannerTitle,
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            color = Color.White,
+            shape = RoundedCornerShape(12.dp),
+            shadowElevation = 2.dp
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    serviceDetails.title,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_star),
+                        contentDescription = "Rating",
+                        tint = Color(0xFFFFA000),
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        serviceDetails.ratingText,
+                        fontSize = 14.sp,
+                        color = Color.Black
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_calendar),
+                        contentDescription = "Bookings",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        serviceDetails.bookingsText,
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryCard(
     category: CategoryItem,
     onClick: () -> Unit
 ) {
@@ -450,8 +422,7 @@ fun CategoryItem(
             color = Color.Black,
             textAlign = TextAlign.Center,
             maxLines = 2,
-            lineHeight = 14.sp,
-            fontWeight = FontWeight.Normal
+            lineHeight = 14.sp
         )
     }
 }
@@ -487,12 +458,16 @@ fun ExpandableServiceSection(
                     color = Color.Black
                 )
                 Icon(
-                    painter = if(expanded) painterResource(Res.drawable.ic_arrow_up) else painterResource(Res.drawable.ic_arrow_down),
+                    painter = if (expanded) {
+                        painterResource(Res.drawable.ic_arrow_up)
+                    } else {
+                        painterResource(Res.drawable.ic_arrow_down)
+                    },
                     contentDescription = if (expanded) "Collapse" else "Expand",
-                    tint = Color.Gray,
-                    modifier = Modifier.size(24.dp)
+                    tint = Color.Gray
                 )
             }
+
             if (expanded) {
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -505,23 +480,14 @@ fun ExpandableServiceSection(
     }
 }
 
-private fun RowScope.Icon(
-    imageVector: Any,
-    contentDescription: String,
-    tint: Color,
-    modifier: Modifier
-) {
-}
-
 @Composable
-fun SubServiceItem(
+private fun SubServiceItem(
     subService: SubService,
     selectedProvider: ServiceProvider?,
     availableProviders: List<ServiceProvider>?,
     isExpanded: Boolean,
     onToggleDropdown: () -> Unit,
     onSelectProvider: (ServiceProvider) -> Unit,
-    onRemoveProvider: () -> Unit,
     onClick: () -> Unit
 ) {
     Column(
@@ -529,7 +495,6 @@ fun SubServiceItem(
             .fillMaxWidth()
             .padding(bottom = 12.dp)
     ) {
-        // Main Row with SubService Info
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -561,67 +526,115 @@ fun SubServiceItem(
                     )
                 }
             }
+
             Spacer(modifier = Modifier.width(12.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    subService.title,
-                    fontWeight = FontWeight.SemiBold,
+                    text = subService.title,
                     fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
                     color = Color.Black
                 )
-            }
-
-            // Add/Remove Provider Button
-            if (selectedProvider == null) {
-                Button(
-                    onClick = onToggleDropdown,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50), contentColor = Color.White),
-                    shape = RoundedCornerShape(6.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                    modifier = Modifier.height(32.dp)
-                ) {
-                    Text("Add", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                }
-            } else {
-                Button(
-                    onClick = onRemoveProvider,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE53935), contentColor = Color.White),
-                    shape = RoundedCornerShape(6.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
-                    modifier = Modifier.height(32.dp)
-                ) {
-                    Text("Remove", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = subService.ratingText,
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Starts at ₹ ${subService.price}",
+                    fontSize = 14.sp,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
 
-        // Provider Dropdown
-        if (isExpanded) {
-            Spacer(modifier = Modifier.height(8.dp))
-            if (availableProviders == null) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally))
-            } else if (availableProviders.isEmpty()) {
-                Text(
-                    "No providers available",
-                    fontSize = 12.sp,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(8.dp)
-                )
-            } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFFF7F7F7), RoundedCornerShape(8.dp))
-                        .padding(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggleDropdown),
+            color = Color(0xFFF9F7FF),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    availableProviders.forEach { provider ->
-                        ProviderItem(
-                            provider = provider,
-                            isSelected = selectedProvider?.id == provider.id,
-                            isEnabled = selectedProvider == null || selectedProvider.id == provider.id,
-                            onSelect = { onSelectProvider(provider) }
-                        )
+                    Text(
+                        text = selectedProvider?.name ?: "Choose a provider",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black
+                    )
+                    Icon(
+                        painter = if (isExpanded) {
+                            painterResource(Res.drawable.ic_arrow_up)
+                        } else {
+                            painterResource(Res.drawable.ic_arrow_down)
+                        },
+                        contentDescription = "Provider options",
+                        tint = Color.Gray
+                    )
+                }
+
+                selectedProvider?.let {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "₹ ${it.fee}",
+                        fontSize = 12.sp,
+                        color = Color(0xFF6C4DFF)
+                    )
+                }
+
+                if (isExpanded) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    availableProviders.orEmpty().forEach { provider ->
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                                .clickable { onSelectProvider(provider) },
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (selectedProvider?.id == provider.id) {
+                                Color(0xFFECE7FF)
+                            } else {
+                                Color.White
+                            }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                AsyncImage(
+                                    model = provider.imageUrl,
+                                    contentDescription = provider.name,
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        provider.name,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = Color.Black
+                                    )
+                                    Text(
+                                        "₹ ${provider.fee}  •  ${provider.rating}",
+                                        fontSize = 12.sp,
+                                        color = Color.Gray
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -629,175 +642,12 @@ fun SubServiceItem(
     }
 }
 
-@Composable
-fun ProviderItem(
-    provider: ServiceProvider,
-    isSelected: Boolean,
-    isEnabled: Boolean,
-    onSelect: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(if (isSelected) Color(0xFFE8F5E9) else Color.White, RoundedCornerShape(8.dp))
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Row(
-            modifier = Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Provider Image
-            AsyncImage(
-                model = provider.imageUrl,
-                contentDescription = provider.name,
-                modifier = Modifier
-                    .width(45.dp)
-                    .height(60.dp)
-                    .clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Fit
-            )
-
-            // Provider Info
-            Column {
-                Text(
-                    provider.name,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
-                    color = Color.Black
-                )
-                Text(
-                    provider.phoneNumber,
-                    fontSize = 10.sp,
-                    color = Color.Gray
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_star),
-                        contentDescription = "Rating",
-                        tint = Color(0xFFFFA000),
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Text(
-                        provider.rating.toString(),
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "₹ ${provider.fee}",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                }
-            }
-        }
-
-        // Select Button
-        Button(
-            onClick = onSelect,
-            enabled = isEnabled,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (isSelected) Color(0xFFE57373) else Color.White,
-                contentColor = if (isSelected) Color.White else Color(0xFF66BB6A),
-                disabledContainerColor = Color(0xFFE0E0E0),
-                disabledContentColor = Color.Gray
-            ),
-            border = if (!isSelected) androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF81C784)) else null,
-            shape = RoundedCornerShape(6.dp),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-            modifier = Modifier.height(28.dp)
-        ) {
-            Text(
-                if (isSelected) "Unselect" else "Select",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-    }
-}
-
-
 @Preview
 @Composable
-fun SalonClassicScreenPreview() {
-    ServiceDetailScreen()
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ServiceDetailsScreenContentPreview() {
-    val sampleCategories = listOf(
-        CategoryItem(id = "1", label = "Cleanup", image = ""),
-        CategoryItem(id = "2", label = "Manicure", image = ""),
-        CategoryItem(id = "3", label = "Pedicure", image = ""),
-        CategoryItem(id = "4", label = "Facial", image = ""),
-        CategoryItem(id = "5", label = "Bleach", image = ""),
-    )
-
-    val sampleSubServices = listOf(
-        SubService(
-            id = "101",
-            title = "Classic Cleanup",
-            rating = 4.8,
-            reviewCount = 1860,
-            durationMin = 30,
-            price = 499,
-            image = ""
-        ),
-        SubService(
-            id = "102",
-            title = "Fruit Cleanup",
-            rating = 4.8,
-            reviewCount = 1860,
-            durationMin = 45,
-            price = 699,
-            image = ""
-        )
-    )
-
-    val sampleSections = listOf(
-        ServiceSection(
-            id = "1",
-            title = "Cleanup",
-            items = sampleSubServices
-        ),
-        ServiceSection(
-            id = "2",
-            title = "Manicure",
-            items = sampleSubServices.map { it.copy(id = it.id + "m") }
-        )
-    )
-
-    val sampleServiceDetails = ServiceDetails(
-        id = 1L,
-        title = "Salon Classic",
-        bannerTitle = "Salon Classic at home",
-        bannerImage = "",
-        rating = 4.8,
-        reviewCount = 1860,
-        bookingsText = "1.2M bookings in last 24 hours",
-        categories = sampleCategories,
-        sections = sampleSections
-    )
-
-    val uiState = ServiceDetailsUiState(
-        isLoading = false,
-        serviceDetails = sampleServiceDetails,
-        selectedCategory = sampleCategories.first(),
-        filteredSections = sampleSections,
-        errorMessage = null
-    )
-
+private fun ServiceDetailsScreenContentPreview() {
     ServiceDetailsScreenContent(
-        uiState = uiState,
+        uiState = ServiceDetailsUiState(),
         intent = {},
-        snackbarHostState = remember { SnackbarHostState() }
+        snackbarHostState = SnackbarHostState()
     )
 }

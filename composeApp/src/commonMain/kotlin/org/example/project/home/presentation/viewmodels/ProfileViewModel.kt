@@ -75,9 +75,9 @@ class ProfileViewModel(
             preferencesRepository.userData.collectLatest { userData ->
                 _state.update {
                     it.copy(
-                        name = userData.name.ifBlank { null },
-                        phoneNumber = userData.phoneNumber.ifBlank { null },
-                        address = userData.address.ifBlank { null },
+                        name = userData.name.takeIf { it.isNotBlank() },
+                        phoneNumber = userData.phoneNumber.takeIf { it.isNotBlank() },
+                        address = userData.address.takeIf { it.isNotBlank() },
                         isLoading = false
                     )
                 }

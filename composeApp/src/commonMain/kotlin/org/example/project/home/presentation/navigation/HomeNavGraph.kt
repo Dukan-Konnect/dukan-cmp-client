@@ -26,7 +26,7 @@ fun NavController.navigateToHomeScreen(navOptions: NavOptions? = null) = navigat
 fun NavController.navigateToBookingsScreen(navOptions: NavOptions? = null) = navigate(BookingsRoute, navOptions)
 fun NavController.navigateToProfileScreen(navOptions: NavOptions? = null) = navigate(ProfileRoute, navOptions)
 fun NavController.navigateToServiceDetailScreen(serviceId: Long) = navigate(ServiceDetailRoute(serviceId))
-fun NavController.navigateToSummaryScreen() = navigate(SummaryRoute)
+fun NavController.navigateToSummaryScreen(route: SummaryRoute) = navigate(route)
 fun NavController.navigateToEditProfileScreen() = navigate(EditProfileRoute)
 fun NavController.navigateToManageAddressScreen() = navigate(ManageAddressRoute)
 fun NavController.navigateToEditAddressScreen(addressId: String = "") = navigate(EditAddressRoute(addressId))
@@ -88,10 +88,8 @@ fun NavGraphBuilder.editAddressDestination(navController: NavController) {
 }
 
 fun NavGraphBuilder.serviceDetailDestination(navController: NavController) {
-    composable<ServiceDetailRoute> { backStackEntry ->
-        val route = backStackEntry.toRoute<ServiceDetailRoute>()
+    composable<ServiceDetailRoute> {
         ServiceDetailScreen(
-            serviceId = route.serviceId,
             onNavigateToSummary = navController::navigateToSummaryScreen
         )
     }

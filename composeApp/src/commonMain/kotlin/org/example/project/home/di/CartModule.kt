@@ -5,11 +5,8 @@ import org.koin.dsl.module
 import org.example.project.home.data.local.database.CartDatabase
 import org.example.project.home.data.repository.BookingRepositoryImpl
 import org.example.project.home.data.repository.BookingRemoteRepositoryImpl
-import org.example.project.home.data.repository.CartRepositoryImpl
 import org.example.project.home.domain.repository.BookingRepository
 import org.example.project.home.domain.repository.BookingRemoteRepository
-import org.example.project.home.domain.repository.CartRepository
-import org.example.project.home.domain.usecase.CartUseCases
 import org.example.project.home.presentation.viewmodels.BookingsViewModel
 import org.example.project.home.presentation.viewmodels.ProfileViewModel
 import org.example.project.profile.data.repository.AddressRepositoryImpl
@@ -21,18 +18,13 @@ val cartModule = module {
     includes(cartPlatformModule)
 
     // DAOs
-    single { get<CartDatabase>().cartDao() }
     single { get<CartDatabase>().bookingDao() }
     single { get<CartDatabase>().addressDao() }
 
     // Repositories
-    single<CartRepository> { CartRepositoryImpl(get()) }
     single<BookingRepository> { BookingRepositoryImpl(get()) }
     single<BookingRemoteRepository> { BookingRemoteRepositoryImpl(get()) }
     single<AddressRepository> { AddressRepositoryImpl(get()) }
-
-    // Use Cases
-    single { CartUseCases(get()) }
 
     // ViewModels
     viewModelOf(::BookingsViewModel)

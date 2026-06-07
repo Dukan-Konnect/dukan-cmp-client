@@ -12,10 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.example.project.core.datastore.UserPreferencesRepository
-import org.example.project.core.datastore.model.UserData
 import org.example.project.core.utils.location.LocationProvider
 import org.example.project.home.domain.model.UserLocation
-import org.example.project.home.domain.repository.CartRepository
 
 class LocationFetchViewModel(
     private val locationProvider: LocationProvider,
