@@ -1,4 +1,4 @@
-package org.example.project.home.presentation.viewmodels
+package org.example.project.profile.presentation.viewmodels
 
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel

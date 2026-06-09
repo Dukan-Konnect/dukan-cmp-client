@@ -21,7 +21,7 @@ import dukaankonnect.composeapp.generated.resources.Res
 import dukaankonnect.composeapp.generated.resources.ic_arrow_back
 import dukaankonnect.composeapp.generated.resources.ic_edit
 import dukaankonnect.composeapp.generated.resources.ic_person_large
-import org.example.project.home.presentation.viewmodels.ProfileViewModel
+import org.example.project.profile.presentation.viewmodels.ProfileViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
 

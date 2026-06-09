@@ -48,9 +48,10 @@ import dukaankonnect.composeapp.generated.resources.ic_person_large
 import dukaankonnect.composeapp.generated.resources.ic_share
 import dukaankonnect.composeapp.generated.resources.ic_star
 import kotlinx.coroutines.launch
-import org.example.project.home.presentation.viewmodels.ProfileEffect
-import org.example.project.home.presentation.viewmodels.ProfileIntent
-import org.example.project.home.presentation.viewmodels.ProfileViewModel
+import org.example.project.core.utils.rememberRateUsLauncher
+import org.example.project.profile.presentation.viewmodels.ProfileEffect
+import org.example.project.profile.presentation.viewmodels.ProfileIntent
+import org.example.project.profile.presentation.viewmodels.ProfileViewModel
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -64,6 +65,7 @@ fun ProfileScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val intent: (ProfileIntent) -> Unit = viewModel::handleIntent
+    val openRateUs = rememberRateUsLauncher()
 
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -71,7 +73,7 @@ fun ProfileScreen(
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
-                ProfileEffect.NavigateToManageAddress -> onNavigateToManageAddress() // Added
+                ProfileEffect.NavigateToManageAddress -> onNavigateToManageAddress()
             }
         }
     }
@@ -200,7 +202,7 @@ fun ProfileScreen(
             ProfileMenuItem(
                 icon = Res.drawable.ic_star,
                 title = "Rate us",
-                onClick = { /* TODO */ }
+                onClick = openRateUs
             )
 
             Divider(
