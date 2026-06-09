@@ -64,7 +64,7 @@ private fun shouldShowBottomBar(currentRoute: String?): Boolean {
 private fun getCurrentRouteObject(currentRoute: String?): Any? {
     return when {
         currentRoute?.contains("HomeRoute") == true -> HomeRoute
-        currentRoute?.contains("BookingsRoute") == true -> BookingsRoute
+        currentRoute?.contains("BookingsRoute") == true -> BookingsRoute()
         currentRoute?.contains("ProfileRoute") == true -> ProfileRoute
         else -> null
     }

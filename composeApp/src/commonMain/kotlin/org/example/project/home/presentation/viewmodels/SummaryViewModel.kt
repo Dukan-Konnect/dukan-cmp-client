@@ -56,7 +56,7 @@ sealed interface SummaryEvent {
 
 sealed interface SummaryEffect {
     data object NavigateBack : SummaryEffect
-    data object NavigateToBookings : SummaryEffect
+    data class NavigateToBookings(val message: String) : SummaryEffect
     data class NavigateToPayment(
         val orderId: String,
         val amount: Long,
@@ -186,8 +186,7 @@ class SummaryViewModel(
             ) {
                 is DataState.Success -> {
                     _state.update { it.copy(isLoading = false) }
-                    _effect.emit(SummaryEffect.ShowMessage("Booking successful"))
-                    _effect.emit(SummaryEffect.NavigateToBookings)
+                    _effect.emit(SummaryEffect.NavigateToBookings("Booking successful"))
                 }
 
                 is DataState.Error -> {

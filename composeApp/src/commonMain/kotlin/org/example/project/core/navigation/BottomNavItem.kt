@@ -10,7 +10,7 @@ import org.jetbrains.compose.resources.DrawableResource
 @Immutable
 sealed class BottomNavItem(val route: Any, val icon: DrawableResource, val label: String) {
     object Home : BottomNavItem(HomeRoute, Res.drawable.ic_home, "Home")
-    object Bookings : BottomNavItem(BookingsRoute, Res.drawable.ic_bookmark, "Bookings")
+    object Bookings : BottomNavItem(BookingsRoute(), Res.drawable.ic_bookmark, "Bookings")
     object Profile : BottomNavItem(ProfileRoute, Res.drawable.ic_person_large, "Profile")
 
     companion object {

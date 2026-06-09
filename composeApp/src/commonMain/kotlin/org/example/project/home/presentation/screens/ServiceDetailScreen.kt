@@ -641,13 +641,3 @@ private fun SubServiceItem(
         }
     }
 }
-
-@Preview
-@Composable
-private fun ServiceDetailsScreenContentPreview() {
-    ServiceDetailsScreenContent(
-        uiState = ServiceDetailsUiState(),
-        intent = {},
-        snackbarHostState = SnackbarHostState()
-    )
-}

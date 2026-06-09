@@ -13,7 +13,7 @@ object OnboardingRoute
 object HomeRoute
 
 @Serializable
-object BookingsRoute
+data class BookingsRoute(val successMessage: String? = null)
 
 @Serializable
 object ProfileRoute

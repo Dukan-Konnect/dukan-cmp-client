@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -61,6 +62,17 @@ import dukaankonnect.composeapp.generated.resources.ic_edit
 import dukaankonnect.composeapp.generated.resources.ic_location
 import dukaankonnect.composeapp.generated.resources.ic_phone
 import dukaankonnect.composeapp.generated.resources.ic_star
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.format.MonthNames
+import kotlinx.datetime.format.char
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import org.example.project.core.utils.AddressFormatter
 import org.example.project.home.presentation.navigation.SummaryRoute
 import org.example.project.home.presentation.viewmodels.SummaryEffect
@@ -68,14 +80,16 @@ import org.example.project.home.presentation.viewmodels.SummaryEvent
 import org.example.project.home.presentation.viewmodels.SummaryViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SummaryScreen(
     viewModel: SummaryViewModel = koinViewModel(),
     onBack: () -> Unit = {},
-    onPay: () -> Unit = {},
+    onPay: (String) -> Unit = {},
     onCouponsClick: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
@@ -94,14 +108,16 @@ fun SummaryScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 SummaryEffect.NavigateBack -> onBack()
-                SummaryEffect.NavigateToBookings -> onPay()
+                is SummaryEffect.NavigateToBookings -> onPay(effect.message)
                 is SummaryEffect.NavigateToPayment -> {
                     paymentOrderId = effect.orderId
                     paymentAmount = effect.amount
                     paymentPhoneNumber = effect.phoneNumber
                 }
 
-                is SummaryEffect.ShowMessage -> snackbarHostState.showSnackbar(effect.message)
+                is SummaryEffect.ShowMessage -> launch {
+                    snackbarHostState.showSnackbar(effect.message)
+                }
             }
         }
     }
@@ -163,9 +179,9 @@ fun SummaryScreen(
 
             Column(
                 modifier = Modifier
+                    .weight(1f)
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(bottom = 120.dp)
             ) {
                 Text(
                     "Your order",
@@ -220,70 +236,27 @@ fun SummaryScreen(
                         )
                     }
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
-        }
 
-        Surface(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
-            color = Color.White,
-            shadowElevation = 8.dp
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                shadowElevation = 8.dp
             ) {
-                val addressText = AddressFormatter.formatFullAddress(addressValue)
-                val timeSlotText = state.timeSlot
-
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showAddressSheet = true }
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .padding(16.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_location),
-                            contentDescription = "Address",
-                            tint = Color.Black,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            addressText,
-                            fontSize = 14.sp,
-                            color = Color.Black,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    IconButton(
-                        onClick = { showAddressSheet = true },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_edit),
-                            contentDescription = "Edit address",
-                            tint = Color(0xFF6C4DFF),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
+                    val addressText = AddressFormatter.formatFullAddress(addressValue)
+                    val timeSlotText = state.timeSlot
 
-                if (!timeSlotText.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(12.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { showTimeSlotSheet = true }
+                            .clickable { showAddressSheet = true }
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -293,14 +266,14 @@ fun SummaryScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                painter = painterResource(Res.drawable.ic_calendar_clock),
-                                contentDescription = "Time slot",
+                                painter = painterResource(Res.drawable.ic_location),
+                                contentDescription = "Address",
                                 tint = Color.Black,
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                timeSlotText,
+                                addressText,
                                 fontSize = 14.sp,
                                 color = Color.Black,
                                 maxLines = 1,
@@ -308,46 +281,89 @@ fun SummaryScreen(
                             )
                         }
                         IconButton(
-                            onClick = { showTimeSlotSheet = true },
+                            onClick = { showAddressSheet = true },
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
                                 painter = painterResource(Res.drawable.ic_edit),
-                                contentDescription = "Edit time slot",
+                                contentDescription = "Edit address",
                                 tint = Color(0xFF6C4DFF),
                                 modifier = Modifier.size(20.dp)
                             )
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                val hasTimeSlot = !timeSlotText.isNullOrBlank()
-                Button(
-                    onClick = {
-                        if (hasTimeSlot) {
-                            viewModel.onEvent(SummaryEvent.ProceedToPayment)
-                        } else {
-                            showTimeSlotSheet = true
+                    if (!timeSlotText.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showTimeSlotSheet = true }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.ic_calendar_clock),
+                                    contentDescription = "Time slot",
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    timeSlotText,
+                                    fontSize = 14.sp,
+                                    color = Color.Black,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            IconButton(
+                                onClick = { showTimeSlotSheet = true },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.ic_edit),
+                                    contentDescription = "Edit time slot",
+                                    tint = Color(0xFF6C4DFF),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF))
-                ) {
-                    Text(
-                        text = if (hasTimeSlot) {
-                            "Pay ${viewModel.formatPrice(state.amountToPayCents)}"
-                        } else {
-                            "Select time slot"
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val hasTimeSlot = !timeSlotText.isNullOrBlank()
+                    Button(
+                        onClick = {
+                            if (hasTimeSlot) {
+                                viewModel.onEvent(SummaryEvent.ProceedToPayment)
+                            } else {
+                                showTimeSlotSheet = true
+                            }
                         },
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White,
-                        fontSize = 16.sp
-                    )
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF))
+                    ) {
+                        Text(
+                            text = if (hasTimeSlot) {
+                                "Pay ${viewModel.formatPrice(state.amountToPayCents)}"
+                            } else {
+                                "Select date and time"
+                            },
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White,
+                            fontSize = 16.sp
+                        )
+                    }
                 }
             }
         }
@@ -661,47 +677,185 @@ private fun AddAddressBottomSheetContent(
 }
 
 @Composable
-private fun SelectTimeSlotBottomSheetContent(
+fun SelectTimeSlotBottomSheetContent(
     currentTimeSlot: String?,
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val slots = listOf(
-        "Today, 10:00 AM - 12:00 PM",
-        "Today, 1:00 PM - 3:00 PM",
-        "Tomorrow, 10:00 AM - 12:00 PM",
-        "Tomorrow, 4:00 PM - 6:00 PM"
-    )
-    var selectedSlot by remember(currentTimeSlot) { mutableStateOf(currentTimeSlot) }
+    val currentMoment = remember { Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()) }
+    val today = currentMoment.date
+
+    val dates = remember { (0..6).map { today.plus(it, DateTimeUnit.DAY) } }
+
+    val timeSlots = remember {
+        listOf(
+            LocalTime(8, 0),
+            LocalTime(10, 0),
+            LocalTime(12, 0),
+            LocalTime(14, 0),
+            LocalTime(16, 0),
+            LocalTime(18, 0)
+        )
+    }
+
+    val dateFormatter = remember {
+        LocalDate.Format {
+            monthName(MonthNames.ENGLISH_ABBREVIATED)
+            char(' ')
+            dayOfMonth()
+        }
+    }
+
+    val timeFormatter = remember {
+        LocalTime.Format {
+            amPmHour()
+            char(':')
+            minute()
+            char(' ')
+            amPmMarker("AM", "PM")
+        }
+    }
+
+    var selectedDate by remember(currentTimeSlot) {
+        mutableStateOf(
+            if (currentTimeSlot != null) {
+                val datePart = currentTimeSlot.substringBefore(",").trim()
+                dates.find { it.format(dateFormatter) == datePart } ?: today
+            } else {
+                today
+            }
+        )
+    }
+
+    var selectedTime by remember(currentTimeSlot) {
+        mutableStateOf(
+            if (currentTimeSlot != null) {
+                val timePart = currentTimeSlot.substringAfter(",").trim()
+                timeSlots.find { it.format(timeFormatter) == timePart }
+            } else {
+                null
+            }
+        )
+    }
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Text("Select time slot", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(16.dp))
+        Text("Select date and time", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+        Spacer(modifier = Modifier.height(4.dp))
+        Text("Your service will take approx. 45 mins", fontSize = 14.sp, color = Color.Gray)
 
-        slots.forEach { slot ->
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp)
-                    .clickable { selectedSlot = slot },
-                shape = RoundedCornerShape(12.dp),
-                color = if (selectedSlot == slot) Color(0xFFECE7FF) else Color.White,
-                border = BorderStroke(1.dp, if (selectedSlot == slot) Color(0xFF6C4DFF) else Color(0xFFE0E0E0))
-            ) {
-                Text(
-                    text = slot,
-                    modifier = Modifier.padding(16.dp),
-                    color = Color.Black
-                )
+        Spacer(modifier = Modifier.height(20.dp))
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(dates) { date ->
+                val isSelected = date == selectedDate
+                val dayOfWeek = date.dayOfWeek.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
+                val dayOfMonth = date.dayOfMonth.toString()
+
+                Surface(
+                    modifier = Modifier
+                        .size(width = 64.dp, height = 72.dp)
+                        .clickable {
+                            selectedDate = date
+                            selectedTime = null
+                        },
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isSelected) Color(0xFFECE7FF) else Color.White,
+                    border = BorderStroke(
+                        1.dp,
+                        if (isSelected) Color(0xFF6C4DFF) else Color(0xFFE0E0E0)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = dayOfWeek,
+                            fontSize = 14.sp,
+                            color = if (isSelected) Color.Black else Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = dayOfMonth,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                    }
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        val chunkedTimes = timeSlots.chunked(3)
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            chunkedTimes.forEach { rowTimes ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    rowTimes.forEach { time ->
+                        val slotDateTime = LocalDateTime(
+                            year = selectedDate.year,
+                            monthNumber = selectedDate.monthNumber,
+                            dayOfMonth = selectedDate.dayOfMonth,
+                            hour = time.hour,
+                            minute = time.minute
+                        )
+                        val slotInstant = slotDateTime.toInstant(TimeZone.currentSystemDefault())
+
+                        val isPastTime = slotInstant < Clock.System.now().plus(45.minutes)
+                        val isSelected = time == selectedTime
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp)
+                                .clickable(enabled = !isPastTime) {
+                                    selectedTime = time
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) Color(0xFFECE7FF) else if (isPastTime) Color(0xFFF9F9F9) else Color.White,
+                            border = BorderStroke(
+                                1.dp,
+                                if (isSelected) Color(0xFF6C4DFF) else if (isPastTime) Color.Transparent else Color(0xFFE0E0E0)
+                            )
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = time.format(timeFormatter),
+                                    fontSize = 14.sp,
+                                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                                    color = if (isPastTime) Color.LightGray else Color.Black
+                                )
+                            }
+                        }
+                    }
+
+                    repeat(3 - rowTimes.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Button(
-                onClick = { selectedSlot?.let(onSelect) },
+                onClick = {
+                    if (selectedTime != null) {
+                        val formattedSlot = "${selectedDate.format(dateFormatter)}, ${selectedTime!!.format(timeFormatter)}"
+                        onSelect(formattedSlot)
+                    }
+                },
                 modifier = Modifier.weight(1f),
+                enabled = selectedTime != null,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF))
             ) {
                 Text("Confirm")

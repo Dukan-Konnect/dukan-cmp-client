@@ -33,87 +33,104 @@ import kotlin.time.ExperimentalTime
 
 @Composable
 fun BookingsScreen(
-    viewModel: BookingsViewModel = koinViewModel()
+    viewModel: BookingsViewModel = koinViewModel(),
+    successMessage: String? = null
 ) {
     val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Column(
+    LaunchedEffect(successMessage) {
+        if (!successMessage.isNullOrBlank()) {
+            snackbarHostState.showSnackbar(successMessage)
+        }
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF7F7F7))
     ) {
-        // Header
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = Color.White,
-            shadowElevation = 2.dp
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 20.dp),
-                contentAlignment = Alignment.Center
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Header
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                shadowElevation = 2.dp
             ) {
-                Text(
-                    text = "My Bookings",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 20.sp,
-                    color = Color.Black
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "My Bookings",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 20.sp,
+                        color = Color.Black
+                    )
+                }
+            }
+
+            // Content
+            if (state.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color(0xFF6C4DFF))
+                }
+            } else if (state.bookings.isEmpty()) {
+                // Empty state
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(32.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_edit),
+                            contentDescription = "No bookings",
+                            modifier = Modifier.size(80.dp),
+                            tint = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "No bookings yet",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            "Your bookings will appear here",
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            } else {
+                // Bookings list
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(state.bookings) { booking ->
+                        BookingCard(booking = booking)
+                    }
+                }
             }
         }
 
-        // Content
-        if (state.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = Color(0xFF6C4DFF))
-            }
-        } else if (state.bookings.isEmpty()) {
-            // Empty state
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(32.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_edit),
-                        contentDescription = "No bookings",
-                        modifier = Modifier.size(80.dp),
-                        tint = Color.Gray
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        "No bookings yet",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.Gray
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Your bookings will appear here",
-                        fontSize = 14.sp,
-                        color = Color.Gray
-                    )
-                }
-            }
-        } else {
-            // Bookings list
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(state.bookings) { booking ->
-                    BookingCard(booking = booking)
-                }
-            }
-        }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        )
     }
 }
 
@@ -310,4 +327,3 @@ private fun formatDate(timestamp: Long): String {
 
     return "${dateTime.dayOfMonth} $month ${dateTime.year}, $hour:$minute $amPm"
 }
-

@@ -23,7 +23,10 @@ import org.example.project.profile.presentation.screens.ProfileScreen
 
 
 fun NavController.navigateToHomeScreen(navOptions: NavOptions? = null) = navigate(HomeRoute, navOptions)
-fun NavController.navigateToBookingsScreen(navOptions: NavOptions? = null) = navigate(BookingsRoute, navOptions)
+fun NavController.navigateToBookingsScreen(
+    successMessage: String? = null,
+    navOptions: NavOptions? = null
+) = navigate(BookingsRoute(successMessage), navOptions)
 fun NavController.navigateToProfileScreen(navOptions: NavOptions? = null) = navigate(ProfileRoute, navOptions)
 fun NavController.navigateToServiceDetailScreen(serviceId: Long) = navigate(ServiceDetailRoute(serviceId))
 fun NavController.navigateToSummaryScreen(route: SummaryRoute) = navigate(route)
@@ -47,8 +50,9 @@ fun NavGraphBuilder.homeDestination(navController: NavController) {
 }
 
 fun NavGraphBuilder.bookingsDestination() {
-    composable<BookingsRoute> {
-        BookingsScreen()
+    composable<BookingsRoute> { backStackEntry ->
+        val route = backStackEntry.toRoute<BookingsRoute>()
+        BookingsScreen(successMessage = route.successMessage)
     }
 }
 
@@ -100,10 +104,10 @@ fun NavGraphBuilder.summaryDestination(navController: NavController) {
     composable<SummaryRoute> {
         SummaryScreen(
             onBack = navController::navigateUp,
-            onPay = {
+            onPay = { successMessage ->
                 navController.popBackStack<HomeRoute>(inclusive = false)
 
-                navController.navigate(BookingsRoute) {
+                navController.navigate(BookingsRoute(successMessage)) {
                     popUpTo<HomeRoute> {
                         saveState = true
                     }
