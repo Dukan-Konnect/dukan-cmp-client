@@ -10,6 +10,7 @@ interface BookingRepository {
     suspend fun createBooking(booking: Booking): Result<Unit>
     suspend fun updateBookingStatus(bookingId: String, status: BookingStatus): Result<Unit>
     suspend fun deleteBooking(bookingId: String): Result<Unit>
+    suspend fun clearAllBookings(): Result<Unit>
     fun observeBookingsByStatus(status: BookingStatus): Flow<List<Booking>>
 }
 

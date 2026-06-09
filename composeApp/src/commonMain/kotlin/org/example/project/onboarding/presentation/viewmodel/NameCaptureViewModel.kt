@@ -64,6 +64,7 @@ class NameCaptureViewModel(
                     hideLoading()
                     prefRepository.updateName(currentName)
                     prefRepository.updatePhoneNumber(phoneNumber)
+                    prefRepository.updateEmail(currentEmail)
                     prefRepository.setLoggedIn(true)
 
                 }

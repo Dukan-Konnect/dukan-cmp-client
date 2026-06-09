@@ -20,6 +20,10 @@ class UserPreferencesRepositoryImpl(
         localDataSource.updateName(name)
     }
 
+    override suspend fun updateEmail(email: String) {
+        localDataSource.updateEmail(email)
+    }
+
     override suspend fun updatePhoneNumber(phoneNumber: String) {
         localDataSource.updatePhoneNumber(phoneNumber)
     }

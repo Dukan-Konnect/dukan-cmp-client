@@ -86,32 +86,38 @@ fun ManageAddressScreen(
                 }
             }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
-            ) {
-                Spacer(modifier = Modifier.height(16.dp))
-
-                uiState.addresses.forEach { address ->
-                    AddressCard(
-                        address = address,
-                        onEdit = { intent(ManageAddressIntent.EditAddressClicked(address.id)) },
-                        onDelete = { showDeleteDialog = address }
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-
-                if (uiState.addresses.isEmpty()) {
+            if (uiState.addresses.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
                         "No addresses found.",
-                        color = Color.Gray,
-                        modifier = Modifier.padding(16.dp)
+                        color = Color.Gray
                     )
                 }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                Spacer(modifier = Modifier.height(72.dp))
+                    uiState.addresses.forEach { address ->
+                        AddressCard(
+                            address = address,
+                            onEdit = { intent(ManageAddressIntent.EditAddressClicked(address.id)) },
+                            onDelete = { showDeleteDialog = address }
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    Spacer(modifier = Modifier.height(72.dp))
+                }
             }
         }
 

@@ -64,6 +64,15 @@ class BookingRepositoryImpl(
         }
     }
 
+    override suspend fun clearAllBookings(): Result<Unit> {
+        return try {
+            bookingDao.deleteAllBookings()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override fun observeBookingsByStatus(status: BookingStatus): Flow<List<Booking>> {
         return bookingDao.observeBookingsByStatus(status.name).map { entities ->
             entities.map { it.toDomain() }

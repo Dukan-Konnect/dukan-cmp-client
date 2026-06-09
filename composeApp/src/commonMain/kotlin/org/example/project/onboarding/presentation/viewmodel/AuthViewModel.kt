@@ -96,6 +96,8 @@ class AuthViewModel(
                     isNewUser = result.data.isNewUser
                     hideLoading()
                     prefRepository.updatePhoneNumber(phoneNumber)
+                    prefRepository.updateEmail(result.data.email ?: "")
+                    prefRepository.updateName(result.data.name ?: "")
                     if (isNewUser) _effect.emit(AuthEffect.NavigateToNextScreen)
                     else prefRepository.setLoggedIn(true)
                 }

@@ -3,6 +3,9 @@ package org.example.project.home.presentation.viewmodels
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.example.project.core.utils.DataState
@@ -59,9 +62,18 @@ class BookingsViewModel(
 
             when (val remoteState = bookingRemoteRepository.getMyBookings()) {
                 is DataState.Success -> {
-                    remoteState.data.forEach { booking ->
-                        bookingRepository.createBooking(booking)
+                    // Insert remote bookings into local cache concurrently for speed
+                    try {
+                        coroutineScope {
+                            val jobs = remoteState.data.map { booking ->
+                                async { bookingRepository.createBooking(booking) }
+                            }
+                            jobs.awaitAll()
+                        }
+                    } catch (e: Exception) {
+                        // ignore insertion failures per-item; the local observer will handle visible state
                     }
+
                     _state.update { it.copy(isLoading = false, errorMessage = null) }
                 }
 

@@ -274,7 +274,6 @@ fun StatusChip(status: BookingStatus) {
     val (backgroundColor, textColor, text) = when (status) {
         BookingStatus.PENDING -> Triple(Color(0xFFFFF3E0), Color(0xFFFF6F00), "Pending")
         BookingStatus.CONFIRMED -> Triple(Color(0xFFE8F5E9), Color(0xFF2E7D32), "Confirmed")
-        BookingStatus.IN_PROGRESS -> Triple(Color(0xFFE3F2FD), Color(0xFF1565C0), "In Progress")
         BookingStatus.COMPLETED -> Triple(Color(0xFFE0F2F1), Color(0xFF00695C), "Completed")
         BookingStatus.CANCELLED -> Triple(Color(0xFFFFEBEE), Color(0xFFC62828), "Cancelled")
     }

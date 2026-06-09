@@ -225,7 +225,7 @@ fun EditProfileScreen(
                 // Save Changes Button
                 Button(
                     onClick = {
-                        viewModel.updateProfile(fullName, mobileNumber)
+                        viewModel.updateProfile(fullName, mobileNumber, email)
                         onBack()
                     },
                     colors = ButtonDefaults.buttonColors(

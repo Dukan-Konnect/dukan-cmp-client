@@ -50,6 +50,11 @@ class UserPreferencesDataSource(
         updateUserData(updatedData)
     }
 
+    suspend fun updateEmail(newEmail: String) {
+        val updatedData = userData.value.copy(email = newEmail)
+        updateUserData(updatedData)
+    }
+
     suspend fun updatePhoneNumber(newPhone: String) {
         val updatedData = userData.value.copy(phoneNumber = newPhone)
         updateUserData(updatedData)

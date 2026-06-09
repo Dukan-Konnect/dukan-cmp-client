@@ -8,5 +8,7 @@ data class VerifyResponseDto(
     val message: String,
     @SerialName("newUser")
     val isNewUser: Boolean,
-    val token: String
+    val token: String,
+    val name: String?,
+    val email: String?
 )

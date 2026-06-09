@@ -7,6 +7,7 @@ data class UserData(
     val name: String = "",
     val phoneNumber: String = "",
     val address: String = "",
+    val email: String = "",
     val token: String = "",
     val hasSeenOnboarding: Boolean = false,
     val isLoggedIn: Boolean = false

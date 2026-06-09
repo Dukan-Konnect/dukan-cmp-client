@@ -189,7 +189,7 @@ fun HomeScreenContent(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .border(1.dp, Color.Gray, RoundedCornerShape(8.dp))
+                        .border(1.dp, Color.Gray.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                         .padding(horizontal = 4.dp)
                 ) {
                     TextField(
@@ -221,7 +221,6 @@ fun HomeScreenContent(
                                 }
                             }
                         },
-                        // ---------------------------------
                         singleLine = true,
                         colors = TextFieldDefaults.colors(
                             focusedIndicatorColor = Color.Transparent,
@@ -229,7 +228,7 @@ fun HomeScreenContent(
                             disabledIndicatorColor = Color.Transparent,
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = Color.White,
-                            disabledContainerColor = Color(0xFFF0F0F0),
+                            disabledContainerColor = Color(0xFFF0F0F0)
                         )
                     )
                 }

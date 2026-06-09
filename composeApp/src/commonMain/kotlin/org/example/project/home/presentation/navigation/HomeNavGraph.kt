@@ -90,6 +90,7 @@ fun NavGraphBuilder.editAddressDestination(navController: NavController) {
 fun NavGraphBuilder.serviceDetailDestination(navController: NavController) {
     composable<ServiceDetailRoute> {
         ServiceDetailScreen(
+            onBackClick = navController::navigateUp,
             onNavigateToSummary = navController::navigateToSummaryScreen
         )
     }

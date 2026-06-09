@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.example.project.core.datastore.UserPreferencesRepository
+import org.example.project.core.data.repository.ProfileRepository
+import org.example.project.core.utils.DataState
+import org.example.project.home.domain.repository.BookingRepository
 
 sealed interface ProfileIntent {
     data object LogoutClicked : ProfileIntent
@@ -33,7 +36,9 @@ data class ProfileUiState(
 )
 
 class ProfileViewModel(
-    private val preferencesRepository: UserPreferencesRepository
+    private val preferencesRepository: UserPreferencesRepository,
+    private val profileRepository: ProfileRepository,
+    private val bookingRepository: BookingRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileUiState())
@@ -64,7 +69,13 @@ class ProfileViewModel(
 
     private fun handleLogout() {
         viewModelScope.launch {
-            preferencesRepository.logOut()
+            // Run logout and clearing bookings concurrently to ensure local cache is cleaned promptly
+            val logoutJob = launch { preferencesRepository.logOut() }
+            val clearBookingsJob = launch { bookingRepository.clearAllBookings() }
+
+            // Wait for both to complete before proceeding
+            logoutJob.join()
+            clearBookingsJob.join()
         }
     }
 
@@ -85,13 +96,27 @@ class ProfileViewModel(
         }
     }
 
-    fun updateProfile(name: String, phoneNumber: String) {
+    fun updateProfile(name: String, phoneNumber: String, email: String) {
+        val trimmedName = name.trim()
+        val normalizedPhone = phoneNumber.removePrefix("+91").trim()
+        val trimmedEmail = email.trim()
+
         viewModelScope.launch {
-            try {
-                preferencesRepository.updateName(name.trim())
-                preferencesRepository.updatePhoneNumber(phoneNumber.removePrefix("+91").trim())
-            } catch (_: Exception) {
-                // Handle error
+            _state.update { it.copy(isLoading = true) }
+
+            when (val result = profileRepository.updateNameAndEmail(trimmedName, trimmedEmail, normalizedPhone)) {
+                is DataState.Success<*> -> {
+                    _state.update { it.copy(isLoading = false, name = trimmedName, phoneNumber = normalizedPhone) }
+                    preferencesRepository.updateName(trimmedName)
+                    preferencesRepository.updatePhoneNumber(normalizedPhone)
+                    preferencesRepository.updateEmail(trimmedEmail)
+                }
+                is DataState.Error -> {
+                    _state.update { it.copy(isLoading = false) }
+                }
+                is DataState.Loading -> {
+                    _state.update { it.copy(isLoading = true) }
+                }
             }
         }
     }

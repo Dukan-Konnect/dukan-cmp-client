@@ -9,6 +9,7 @@ interface UserPreferencesRepository {
     suspend fun updateUserData(userData: UserData)
 
     suspend fun updateName(name: String)
+    suspend fun updateEmail(email: String)
     suspend fun updatePhoneNumber(phoneNumber: String)
     suspend fun updateAddress(address: String)
     suspend fun updateToken(token: String)

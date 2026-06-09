@@ -182,7 +182,6 @@ fun ProfileScreen(
                 title = "Refer & Earn",
                 onClick = {
                     scope.launch {
-                        
                         snackbarHostState.showSnackbar(message = "Thank you for using DukaanKonnect")
                     }
                 }
