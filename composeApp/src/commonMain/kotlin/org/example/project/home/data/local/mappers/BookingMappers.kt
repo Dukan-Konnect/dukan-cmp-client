@@ -1,9 +1,9 @@
 package org.example.project.home.data.local.mappers
 
 import org.example.project.home.data.local.entities.BookingEntity
-import org.example.project.home.domain.model.Booking
-import org.example.project.home.domain.model.BookingStatus
-import org.example.project.home.domain.model.PaymentStatus
+import org.example.project.core.model.booking.Booking
+import org.example.project.core.model.booking.BookingStatus
+import org.example.project.core.model.booking.PaymentStatus
 
 fun BookingEntity.toDomain(): Booking {
     return Booking(

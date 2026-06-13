@@ -1,4 +1,4 @@
-package org.example.project.home.presentation.viewmodels
+package org.example.project.booking.presentation.viewmodels
 
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
@@ -9,7 +9,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.example.project.core.utils.DataState
-import org.example.project.home.domain.model.Booking
+import org.example.project.core.model.booking.Booking
 import org.example.project.home.domain.repository.BookingRepository
 import org.example.project.home.domain.repository.BookingRemoteRepository
 
@@ -30,6 +30,10 @@ class BookingsViewModel(
 
     init {
         loadBookings()
+        refreshFromBackend()
+    }
+
+    fun refreshBookings() {
         refreshFromBackend()
     }
 

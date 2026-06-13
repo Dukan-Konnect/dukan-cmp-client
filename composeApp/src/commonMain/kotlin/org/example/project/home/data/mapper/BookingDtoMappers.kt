@@ -1,9 +1,9 @@
 package org.example.project.home.data.mapper
 
 import org.example.project.core.network.dto.booking.BookingResponseDto
-import org.example.project.home.domain.model.Booking
-import org.example.project.home.domain.model.BookingStatus
-import org.example.project.home.domain.model.PaymentStatus
+import org.example.project.core.model.booking.Booking
+import org.example.project.core.model.booking.BookingStatus
+import org.example.project.core.model.booking.PaymentStatus
 
 fun BookingResponseDto.toDomain(): Booking {
     val bookingStatus = runCatching { BookingStatus.valueOf(status ?: BookingStatus.PENDING.name) }

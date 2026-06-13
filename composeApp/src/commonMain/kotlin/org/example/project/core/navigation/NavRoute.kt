@@ -23,3 +23,12 @@ object ManageAddressRoute
 
 @Serializable
 data class EditAddressRoute(val addressId: String = "")
+
+@Serializable
+data class BookingDetailRoute(val bookingId: String)
+
+@Serializable
+data class CancelBookingRoute(val bookingId: String)
+
+@Serializable
+data class RescheduleBookingRoute(val bookingId: String)

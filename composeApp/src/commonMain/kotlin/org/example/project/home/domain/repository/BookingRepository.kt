@@ -1,8 +1,8 @@
 package org.example.project.home.domain.repository
 
 import kotlinx.coroutines.flow.Flow
-import org.example.project.home.domain.model.Booking
-import org.example.project.home.domain.model.BookingStatus
+import org.example.project.core.model.booking.Booking
+import org.example.project.core.model.booking.BookingStatus
 
 interface BookingRepository {
     fun observeAllBookings(): Flow<List<Booking>>

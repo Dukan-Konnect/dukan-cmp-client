@@ -1,6 +1,6 @@
 package org.example.project.booking.presentation.screens
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,38 +13,53 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import coil3.compose.AsyncImage
+import dukaankonnect.composeapp.generated.resources.Res
+import dukaankonnect.composeapp.generated.resources.ic_arrow_back
+import org.example.project.booking.presentation.viewmodels.BookingsViewModel
+import org.jetbrains.compose.resources.painterResource
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CancelBookingScreen(
-    bookingTitle: String = "Diamond Facial",
-    bookingDuration: String = "2 hrs",
-    bookingInfo: String = "Includes dummy info",
+    bookingId: String,
+    viewModel: BookingsViewModel = koinViewModel(),
     onBackClick: () -> Unit = {},
     onCancelClick: (reason: String, comment: String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
+    val state by viewModel.state.collectAsState()
+    val booking = state.bookings.find { it.id == bookingId }
+
+    if (booking == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     var selectedReason by remember { mutableStateOf<Int?>(null) }
     var commentText by remember { mutableStateOf("") }
 
     val reasons = listOf(
-        "A reason here for cancellation of booking",
-        "A reason here for cancellation of booking, a reason here for cancellation of booking",
-        "A reason here for cancellation of booking",
-        "A reason here for cancellation of booking, a reason here for cancellation of booking"
+        "Schedule conflict or unexpected change of plans",
+        "Booked the wrong date or time by mistake",
+        "Found a better or more affordable alternative",
+        "No longer need the requested service"
     )
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Cancel Booking") },
+                windowInsets = WindowInsets(0.dp),
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Text(
-                            text = "←",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onSurface
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_arrow_back),
+                            contentDescription = "Back",
+                            tint = Color.Black
                         )
                     }
                 },
@@ -73,42 +88,34 @@ fun CancelBookingScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Placeholder image
-                    Box(
+                    AsyncImage(
+                        model = booking.subServiceImage,
+                        contentDescription = booking.subServiceName,
                         modifier = Modifier
                             .size(80.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .then(Modifier.then(Modifier)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            color = MaterialTheme.colorScheme.primaryContainer
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text("Image", style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
+                    )
 
                     Column(
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = bookingTitle,
+                            text = booking.subServiceName,
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "• $bookingDuration",
+                            text = "• 1 hour",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "• $bookingInfo",
+                            text = "• Provider: ${booking.providerName}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -131,19 +138,20 @@ fun CancelBookingScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.Top
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { selectedReason = index }
+                        .padding(vertical = 12.dp, horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
                         selected = selectedReason == index,
                         onClick = { selectedReason = index }
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = reason,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = 12.dp)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -195,16 +203,6 @@ fun CancelBookingScreen(
                     style = MaterialTheme.typography.titleMedium
                 )
             }
-        }
-    }
-}
-
-@Preview
-@Composable
-fun PreviewCancelBookingScreen() {
-    MaterialTheme {
-        Surface {
-            CancelBookingScreen()
         }
     }
 }

@@ -11,14 +11,13 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.utils.DataState
-import org.example.project.home.domain.model.CreateBookingRequest
+import org.example.project.core.model.booking.CreateBookingRequest
 import org.example.project.home.domain.repository.BookingRemoteRepository
 import org.example.project.home.domain.usecase.CreatePaymentOrderUseCase
 import org.example.project.home.presentation.navigation.SummaryRoute

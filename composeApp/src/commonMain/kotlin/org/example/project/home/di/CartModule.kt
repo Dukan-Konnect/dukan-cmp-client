@@ -7,7 +7,7 @@ import org.example.project.home.data.repository.BookingRepositoryImpl
 import org.example.project.home.data.repository.BookingRemoteRepositoryImpl
 import org.example.project.home.domain.repository.BookingRepository
 import org.example.project.home.domain.repository.BookingRemoteRepository
-import org.example.project.home.presentation.viewmodels.BookingsViewModel
+import org.example.project.booking.presentation.viewmodels.BookingsViewModel
 import org.example.project.profile.presentation.viewmodels.ProfileViewModel
 import org.example.project.profile.data.repository.AddressRepositoryImpl
 import org.example.project.profile.domain.repository.AddressRepository

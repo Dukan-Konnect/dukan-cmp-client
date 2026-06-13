@@ -5,8 +5,8 @@ import org.example.project.core.network.services.BookingService
 import org.example.project.core.utils.DataState
 import org.example.project.core.utils.safeApiCall
 import org.example.project.home.data.mapper.toDomain
-import org.example.project.home.domain.model.Booking
-import org.example.project.home.domain.model.CreateBookingRequest
+import org.example.project.core.model.booking.Booking
+import org.example.project.core.model.booking.CreateBookingRequest
 import org.example.project.home.domain.repository.BookingRemoteRepository
 
 class BookingRemoteRepositoryImpl(

@@ -1,4 +1,4 @@
-package org.example.project.home.domain.model
+package org.example.project.core.model.booking
 
 data class CreateBookingRequest(
     val subServiceId: String,
@@ -6,4 +6,3 @@ data class CreateBookingRequest(
     val scheduledDate: String,
     val address: String
 )
-

@@ -1,4 +1,4 @@
-package org.example.project.home.domain.model
+package org.example.project.core.model.booking
 
 import androidx.compose.runtime.Immutable
 
