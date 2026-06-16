@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.data.repository.ProfileRepository
 import org.example.project.core.utils.DataState
-import org.example.project.home.domain.repository.BookingRepository
+import org.example.project.booking.domain.repository.BookingRepository
 
 sealed interface ProfileIntent {
     data object LogoutClicked : ProfileIntent

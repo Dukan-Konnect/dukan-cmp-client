@@ -16,6 +16,10 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import dukaankonnect.composeapp.generated.resources.Res
 import dukaankonnect.composeapp.generated.resources.ic_arrow_back
+import kotlinx.coroutines.launch
+import org.example.project.booking.presentation.dialogs.CancelAnywayDialog
+import org.example.project.booking.presentation.viewmodels.BookingsEffect
+import org.example.project.booking.presentation.viewmodels.BookingsIntent
 import org.example.project.booking.presentation.viewmodels.BookingsViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -26,11 +30,28 @@ fun CancelBookingScreen(
     bookingId: String,
     viewModel: BookingsViewModel = koinViewModel(),
     onBackClick: () -> Unit = {},
-    onCancelClick: (reason: String, comment: String) -> Unit = { _, _ -> },
+    onRescheduleClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
     val booking = state.bookings.find { it.id == bookingId }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                BookingsEffect.NavigateBack -> onBackClick()
+                is BookingsEffect.ShowToast -> {
+                    launch {
+                        snackbarHostState.showSnackbar(message = effect.message)
+                    }
+                }
+            }
+        }
+    }
+
+    val intent: (BookingsIntent) -> Unit = viewModel::handleIntent
 
     if (booking == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -41,6 +62,7 @@ fun CancelBookingScreen(
 
     var selectedReason by remember { mutableStateOf<Int?>(null) }
     var commentText by remember { mutableStateOf("") }
+    var showCancelDialog by remember { mutableStateOf(false) }
 
     val reasons = listOf(
         "Schedule conflict or unexpected change of plans",
@@ -48,6 +70,21 @@ fun CancelBookingScreen(
         "Found a better or more affordable alternative",
         "No longer need the requested service"
     )
+
+    if (showCancelDialog) {
+        CancelAnywayDialog(
+            onDismiss = { showCancelDialog = false },
+            onCancelAnyway = {
+                showCancelDialog = false
+                val reason = selectedReason?.let { reasons[it] } ?: ""
+                intent(BookingsIntent.CancelBooking(bookingId, reason, commentText))
+            },
+            onReschedule = {
+                showCancelDialog = false
+                onRescheduleClick(bookingId)
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -67,6 +104,9 @@ fun CancelBookingScreen(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
         }
     ) { paddingValues ->
         Column(
@@ -125,7 +165,6 @@ fun CancelBookingScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Reason for Cancellation Section
             Text(
                 text = "REASON FOR CANCELLATION",
                 style = MaterialTheme.typography.labelMedium,
@@ -133,7 +172,6 @@ fun CancelBookingScreen(
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            // Radio buttons for reasons
             reasons.forEachIndexed { index, reason ->
                 Row(
                     modifier = Modifier
@@ -158,7 +196,6 @@ fun CancelBookingScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Comment TextField
             OutlinedTextField(
                 value = commentText,
                 onValueChange = { commentText = it },
@@ -182,26 +219,26 @@ fun CancelBookingScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Cancel Now Button
+            // cancel button
             Button(
                 onClick = {
-                    val reason = selectedReason?.let { reasons[it] } ?: ""
-                    onCancelClick(reason, commentText)
+                    showCancelDialog = true
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                enabled = selectedReason != null,
+                enabled = selectedReason != null && !state.isLoading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text(
-                    text = "Cancel Now",
-                    style = MaterialTheme.typography.titleMedium
-                )
+                if (state.isLoading) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                } else {
+                    Text(text = "Cancel Now", style = MaterialTheme.typography.titleMedium)
+                }
             }
         }
     }

@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.utils.DataState
 import org.example.project.core.model.booking.CreateBookingRequest
-import org.example.project.home.domain.repository.BookingRemoteRepository
+import org.example.project.booking.domain.repository.BookingRemoteRepository
 import org.example.project.home.domain.usecase.CreatePaymentOrderUseCase
 import org.example.project.home.presentation.navigation.SummaryRoute
 
@@ -28,7 +28,8 @@ data class SummaryUiState(
     val customerName: String = "",
     val phoneNumber: String = "",
     val address: String = "",
-    val timeSlot: String? = null,
+    val timeSlotIso: String? = null,
+    val timeSlotFormatted: String? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 ) {
@@ -45,7 +46,7 @@ data class SummaryUiState(
 sealed interface SummaryEvent {
     data class UpdatePhoneNumber(val phoneNumber: String) : SummaryEvent
     data class UpdateAddress(val address: String?) : SummaryEvent
-    data class UpdateTimeSlot(val timeSlot: String?) : SummaryEvent
+    data class UpdateTimeSlot(val isoString: String?, val formattedString: String?) : SummaryEvent
     data class UpdateName(val name: String?) : SummaryEvent
     data class PaymentSucceeded(val orderId: String) : SummaryEvent
     data object ProceedToPayment : SummaryEvent
@@ -99,7 +100,12 @@ class SummaryViewModel(
             }
 
             is SummaryEvent.UpdateTimeSlot -> {
-                _state.update { it.copy(timeSlot = event.timeSlot?.trim()) }
+                _state.update {
+                    it.copy(
+                        timeSlotIso = event.isoString?.trim(),
+                        timeSlotFormatted = event.formattedString?.trim()
+                    )
+                }
             }
 
             is SummaryEvent.UpdateName -> {
@@ -136,7 +142,7 @@ class SummaryViewModel(
             currentState.booking == null -> emitEffect(SummaryEffect.ShowMessage("Booking details are missing"))
             currentState.phoneNumber.isBlank() -> emitEffect(SummaryEffect.ShowMessage("Please add phone number"))
             currentState.address.isBlank() -> emitEffect(SummaryEffect.ShowMessage("Please add delivery address"))
-            currentState.timeSlot.isNullOrBlank() -> emitEffect(SummaryEffect.ShowMessage("Please select time slot"))
+            currentState.timeSlotIso.isNullOrBlank() -> emitEffect(SummaryEffect.ShowMessage("Please select time slot"))
             else -> {
                 viewModelScope.launch {
                     _state.update { it.copy(isLoading = true, errorMessage = null) }
@@ -163,10 +169,10 @@ class SummaryViewModel(
 
     private fun saveBookingAfterPayment(orderId: String) {
         val booking = _state.value.booking ?: return
-        val scheduledDate = _state.value.timeSlot
+        val scheduledDateIso = _state.value.timeSlotIso
         val address = _state.value.address.trim()
 
-        if (scheduledDate.isNullOrBlank() || address.isBlank()) {
+        if (scheduledDateIso.isNullOrBlank() || address.isBlank()) {
             emitEffect(SummaryEffect.ShowMessage("Missing booking details"))
             return
         }
@@ -178,7 +184,7 @@ class SummaryViewModel(
                     CreateBookingRequest(
                         subServiceId = booking.subServiceId,
                         providerId = booking.providerId,
-                        scheduledDate = scheduledDate,
+                        scheduledDate = scheduledDateIso,
                         address = address
                     )
                 )

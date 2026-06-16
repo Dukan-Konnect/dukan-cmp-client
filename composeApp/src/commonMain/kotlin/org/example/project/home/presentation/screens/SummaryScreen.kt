@@ -251,7 +251,7 @@ fun SummaryScreen(
                         .padding(16.dp)
                 ) {
                     val addressText = AddressFormatter.formatFullAddress(addressValue)
-                    val timeSlotText = state.timeSlot
+                    val timeSlotText = state.timeSlotFormatted
 
                     Row(
                         modifier = Modifier
@@ -397,7 +397,7 @@ fun SummaryScreen(
                     onSave = { newAddress ->
                         viewModel.onEvent(SummaryEvent.UpdateAddress(newAddress))
                         showAddressSheet = false
-                        if (state.timeSlot.isNullOrBlank()) {
+                        if (state.timeSlotFormatted.isNullOrBlank()) {
                             showTimeSlotSheet = true
                         }
                     },
@@ -413,9 +413,9 @@ fun SummaryScreen(
                 containerColor = Color.White
             ) {
                 SelectTimeSlotBottomSheetContent(
-                    currentTimeSlot = state.timeSlot,
-                    onSelect = { selectedSlot ->
-                        viewModel.onEvent(SummaryEvent.UpdateTimeSlot(selectedSlot))
+                    currentTimeSlot = state.timeSlotFormatted,
+                    onSelect = { isoString, formattedString ->
+                        viewModel.onEvent(SummaryEvent.UpdateTimeSlot(isoString, formattedString))
                         showTimeSlotSheet = false
                     },
                     onDismiss = { showTimeSlotSheet = false }
@@ -679,7 +679,7 @@ private fun AddAddressBottomSheetContent(
 @Composable
 fun SelectTimeSlotBottomSheetContent(
     currentTimeSlot: String?,
-    onSelect: (String) -> Unit,
+    onSelect: (isoString: String, formattedString: String) -> Unit,
     onDismiss: () -> Unit
 ) {
     val currentMoment = remember { Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()) }
@@ -850,8 +850,18 @@ fun SelectTimeSlotBottomSheetContent(
             Button(
                 onClick = {
                     if (selectedTime != null) {
+                        val finalDateTime = LocalDateTime(
+                            year = selectedDate.year,
+                            monthNumber = selectedDate.monthNumber,
+                            dayOfMonth = selectedDate.dayOfMonth,
+                            hour = selectedTime!!.hour,
+                            minute = selectedTime!!.minute
+                        )
+                        val isoString = finalDateTime.toInstant(TimeZone.currentSystemDefault()).toString()
+
                         val formattedSlot = "${selectedDate.format(dateFormatter)}, ${selectedTime!!.format(timeFormatter)}"
-                        onSelect(formattedSlot)
+
+                        onSelect(isoString, formattedSlot)
                     }
                 },
                 modifier = Modifier.weight(1f),

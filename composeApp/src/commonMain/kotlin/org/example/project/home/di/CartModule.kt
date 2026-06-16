@@ -3,10 +3,10 @@ package org.example.project.home.di
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 import org.example.project.home.data.local.database.CartDatabase
-import org.example.project.home.data.repository.BookingRepositoryImpl
-import org.example.project.home.data.repository.BookingRemoteRepositoryImpl
-import org.example.project.home.domain.repository.BookingRepository
-import org.example.project.home.domain.repository.BookingRemoteRepository
+import org.example.project.booking.data.repository.BookingRepositoryImpl
+import org.example.project.booking.data.repository.BookingRemoteRepositoryImpl
+import org.example.project.booking.domain.repository.BookingRepository
+import org.example.project.booking.domain.repository.BookingRemoteRepository
 import org.example.project.booking.presentation.viewmodels.BookingsViewModel
 import org.example.project.profile.presentation.viewmodels.ProfileViewModel
 import org.example.project.profile.data.repository.AddressRepositoryImpl

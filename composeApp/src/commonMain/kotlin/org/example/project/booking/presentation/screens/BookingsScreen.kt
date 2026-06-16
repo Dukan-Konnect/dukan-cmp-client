@@ -27,8 +27,12 @@ import org.example.project.core.model.booking.BookingStatus
 import org.example.project.booking.presentation.viewmodels.BookingsViewModel
 import org.koin.compose.viewmodel.koinViewModel
 import kotlinx.datetime.Instant
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import org.example.project.booking.presentation.viewmodels.BookingsIntent
+import org.example.project.booking.util.formatDate
+import org.example.project.booking.util.formatScheduledDateString
 import org.jetbrains.compose.resources.painterResource
 import kotlin.time.ExperimentalTime
 
@@ -57,9 +61,12 @@ fun BookingsScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.handleIntent(BookingsIntent.Refresh)
+    }
+
     LaunchedEffect(successMessage) {
         if (!successMessage.isNullOrBlank()) {
-            viewModel.refreshBookings()
             snackbarHostState.showSnackbar(successMessage)
         }
     }
@@ -294,7 +301,7 @@ fun BookingCard(
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        booking.scheduledDate,
+                        text = formatScheduledDateString(booking.scheduledDate),
                         fontSize = 13.sp,
                         color = Color.Gray
                     )
@@ -355,23 +362,4 @@ fun StatusChip(status: BookingStatus) {
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
         )
     }
-}
-
-@OptIn(ExperimentalTime::class)
-private fun formatDate(timestamp: Long): String {
-    val instant = Instant.fromEpochMilliseconds(timestamp)
-    val dateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-
-    val month = when (dateTime.monthNumber) {
-        1 -> "Jan"; 2 -> "Feb"; 3 -> "Mar"; 4 -> "Apr"
-        5 -> "May"; 6 -> "Jun"; 7 -> "Jul"; 8 -> "Aug"
-        9 -> "Sep"; 10 -> "Oct"; 11 -> "Nov"; 12 -> "Dec"
-        else -> ""
-    }
-
-    val hour = if (dateTime.hour == 0) 12 else if (dateTime.hour > 12) dateTime.hour - 12 else dateTime.hour
-    val amPm = if (dateTime.hour < 12) "AM" else "PM"
-    val minute = dateTime.minute.toString().padStart(2, '0')
-
-    return "${dateTime.dayOfMonth} $month ${dateTime.year}, $hour:$minute $amPm"
 }

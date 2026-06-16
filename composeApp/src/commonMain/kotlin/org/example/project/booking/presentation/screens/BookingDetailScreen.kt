@@ -37,6 +37,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 import org.example.project.booking.presentation.viewmodels.BookingsViewModel
+import org.example.project.booking.util.formatScheduledDateString
 import org.example.project.core.model.booking.BookingStatus
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -109,7 +110,7 @@ fun BookingDetailScreen(
                 ) {
                     DetailRow(
                         label = "Scheduled For",
-                        value = booking.scheduledDate ?: "Not scheduled"
+                        value = booking.scheduledDate?.let { formatScheduledDateString(it) } ?: "Not scheduled"
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -187,10 +188,15 @@ private fun checkIfRescheduleDisabled(scheduledDateStr: String?): Boolean {
     if (scheduledDateStr.isNullOrBlank()) return false
 
     return try {
-        val scheduledDateTime = LocalDateTime.parse(scheduledDateStr)
-        val scheduledInstant = scheduledDateTime.toInstant(TimeZone.currentSystemDefault())
+        val scheduledInstant = try {
+            kotlinx.datetime.Instant.parse(scheduledDateStr)
+        } catch (_: Exception) {
+            val dateTime = LocalDateTime.parse(scheduledDateStr)
+            dateTime.toInstant(TimeZone.currentSystemDefault())
+        }
 
         val now = Clock.System.now()
+        val scheduledDateTime = scheduledInstant.toLocalDateTime(TimeZone.currentSystemDefault())
         val nowDateTime = now.toLocalDateTime(TimeZone.currentSystemDefault())
 
         val isToday = scheduledDateTime.date == nowDateTime.date

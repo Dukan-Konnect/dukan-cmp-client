@@ -6,12 +6,14 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.example.project.booking.domain.repository.BookingRemoteRepository
+import org.example.project.booking.domain.repository.BookingRepository
 import org.example.project.core.utils.DataState
 import org.example.project.core.model.booking.Booking
-import org.example.project.home.domain.repository.BookingRepository
-import org.example.project.home.domain.repository.BookingRemoteRepository
+import org.example.project.core.utils.SnackbarMessage
 
 @Immutable
 data class BookingsUiState(
@@ -19,6 +21,18 @@ data class BookingsUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null
 )
+
+sealed interface BookingsIntent {
+    data object LoadAll : BookingsIntent
+    data object Refresh : BookingsIntent
+    data class CancelBooking(val id: String, val reason: String, val comment: String) : BookingsIntent
+    data class RescheduleBooking(val id: String, val newDateIso: String) : BookingsIntent
+}
+
+sealed interface BookingsEffect {
+    data object NavigateBack : BookingsEffect
+    data class ShowToast(val message: String) : BookingsEffect
+}
 
 class BookingsViewModel(
     private val bookingRepository: BookingRepository,
@@ -28,34 +42,33 @@ class BookingsViewModel(
     private val _state = MutableStateFlow(BookingsUiState())
     val state: StateFlow<BookingsUiState> = _state.asStateFlow()
 
+    private val _effect = MutableSharedFlow<BookingsEffect>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val effect: SharedFlow<BookingsEffect> = _effect.asSharedFlow()
+
     init {
-        loadBookings()
-        refreshFromBackend()
+        handleIntent(BookingsIntent.LoadAll)
     }
 
-    fun refreshBookings() {
-        refreshFromBackend()
+    fun handleIntent(intent: BookingsIntent) {
+        when (intent) {
+            BookingsIntent.LoadAll -> loadBookings()
+            BookingsIntent.Refresh -> refreshFromBackend()
+            is BookingsIntent.CancelBooking -> executeCancelBooking(intent.id, intent.reason, intent.comment)
+            is BookingsIntent.RescheduleBooking -> executeRescheduleBooking(intent.id, intent.newDateIso)
+        }
     }
 
     private fun loadBookings() {
         viewModelScope.launch {
             bookingRepository.observeAllBookings()
                 .catch { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = "Failed to load bookings: ${error.message}"
-                        )
-                    }
+                    _state.update { it.copy(isLoading = false, errorMessage = "Failed to load: ${error.message}") }
                 }
                 .collect { bookings ->
-                    _state.update {
-                        it.copy(
-                            bookings = bookings,
-                            isLoading = false,
-                            errorMessage = null
-                        )
-                    }
+                    _state.update { it.copy(bookings = bookings, isLoading = false, errorMessage = null) }
                 }
         }
     }
@@ -63,28 +76,54 @@ class BookingsViewModel(
     private fun refreshFromBackend() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
-
             when (val remoteState = bookingRemoteRepository.getMyBookings()) {
                 is DataState.Success -> {
-                    // Insert remote bookings into local cache concurrently for speed
                     try {
                         coroutineScope {
-                            val jobs = remoteState.data.map { booking ->
+                            remoteState.data.map { booking ->
                                 async { bookingRepository.createBooking(booking) }
-                            }
-                            jobs.awaitAll()
+                            }.awaitAll()
                         }
-                    } catch (e: Exception) {
-                        // ignore insertion failures per-item; the local observer will handle visible state
-                    }
-
+                    } catch (_: Exception) { }
                     _state.update { it.copy(isLoading = false, errorMessage = null) }
                 }
+                is DataState.Error -> _state.update { it.copy(isLoading = false, errorMessage = remoteState.message) }
+                DataState.Loading -> Unit
+            }
+        }
+    }
 
-                is DataState.Error -> {
-                    _state.update { it.copy(isLoading = false, errorMessage = remoteState.message) }
+    private fun executeCancelBooking(id: String, reason: String, comment: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            when (val response = bookingRemoteRepository.cancelBooking(id)) {
+                is DataState.Success -> {
+                    bookingRepository.createBooking(response.data)
+                    _state.update { it.copy(isLoading = false) }
+                    _effect.emit(BookingsEffect.NavigateBack)
                 }
+                is DataState.Error -> {
+                    _state.update { it.copy(isLoading = false) }
+                    _effect.emit(BookingsEffect.ShowToast(SnackbarMessage.genericError))
+                }
+                DataState.Loading -> Unit
+            }
+        }
+    }
 
+    private fun executeRescheduleBooking(id: String, newDateIso: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            when (val response = bookingRemoteRepository.rescheduleBooking(id, newDateIso)) {
+                is DataState.Success -> {
+                    bookingRepository.createBooking(response.data)
+                    _state.update { it.copy(isLoading = false) }
+                    _effect.emit(BookingsEffect.NavigateBack)
+                }
+                is DataState.Error -> {
+                    _state.update { it.copy(isLoading = false) }
+                    _effect.emit(BookingsEffect.ShowToast(SnackbarMessage.genericError))
+                }
                 DataState.Loading -> Unit
             }
         }

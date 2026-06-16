@@ -2,14 +2,45 @@ package org.example.project.booking.presentation.screens
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,17 +52,19 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import dukaankonnect.composeapp.generated.resources.Res
 import dukaankonnect.composeapp.generated.resources.ic_arrow_back
+import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
-import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
-import kotlinx.datetime.format.MonthNames
 import kotlinx.datetime.format.char
 import kotlinx.datetime.plus
 import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import org.example.project.booking.presentation.dialogs.RescheduleConfirmDialog
+import org.example.project.booking.presentation.viewmodels.BookingsEffect
+import org.example.project.booking.presentation.viewmodels.BookingsIntent
 import org.example.project.booking.presentation.viewmodels.BookingsViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -44,11 +77,27 @@ fun RescheduleBookingScreen(
     bookingId: String,
     viewModel: BookingsViewModel = koinViewModel(),
     onBackClick: () -> Unit = {},
-    onConfirmSlot: (date: String, time: String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.state.collectAsState()
     val booking = state.bookings.find { it.id == bookingId }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                BookingsEffect.NavigateBack -> onBackClick()
+                is BookingsEffect.ShowToast -> {
+                    launch {
+                        snackbarHostState.showSnackbar(message = effect.message)
+                    }
+                }
+            }
+        }
+    }
+
+    val intent: (BookingsIntent) -> Unit = viewModel::handleIntent
 
     if (booking == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -57,7 +106,6 @@ fun RescheduleBookingScreen(
         return
     }
 
-    // --- Date and Time Logic ---
     val timeSlots = remember {
         listOf(
             LocalTime(8, 0), LocalTime(10, 0), LocalTime(12, 0),
@@ -72,29 +120,19 @@ fun RescheduleBookingScreen(
         val nowInstant = Clock.System.now()
         val twoHoursFromNow = nowInstant.plus(2.hours)
 
-        // Check if all timeslots for 'today' are in the past (+ 2 hours margin)
         val allTodaySlotsInvalid = timeSlots.all { time ->
             val slotDateTime = LocalDateTime(
-                today.year,
-                today.monthNumber,
-                today.dayOfMonth,
-                time.hour,
-                time.minute
+                year = today.year,
+                month = today.month,
+                day = today.day,
+                hour = time.hour,
+                minute = time.minute
             )
             slotDateTime.toInstant(TimeZone.currentSystemDefault()) < twoHoursFromNow
         }
 
-        // If today is burned out, start from tomorrow
         val startOffset = if (allTodaySlotsInvalid) 1 else 0
         (startOffset..startOffset + 2).map { today.plus(it, DateTimeUnit.DAY) }
-    }
-
-    val dateFormatter = remember {
-        LocalDate.Format {
-            monthName(MonthNames.ENGLISH_ABBREVIATED)
-            char(' ')
-            dayOfMonth()
-        }
     }
 
     val timeFormatter = remember {
@@ -109,6 +147,26 @@ fun RescheduleBookingScreen(
 
     var selectedDate by remember { mutableStateOf(validDates.first()) }
     var selectedTime by remember { mutableStateOf<LocalTime?>(null) }
+    var showConfirmDialog by remember { mutableStateOf(false) } // Dialog State
+
+    if (showConfirmDialog) {
+        RescheduleConfirmDialog(
+            onDismiss = { showConfirmDialog = false },
+            onCancel = { showConfirmDialog = false },
+            onReschedule = {
+                showConfirmDialog = false
+                val finalDateTime = LocalDateTime(
+                    year = selectedDate.year,
+                    month = selectedDate.month,
+                    day = selectedDate.day,
+                    hour = selectedTime!!.hour,
+                    minute = selectedTime!!.minute
+                )
+                val isoString = finalDateTime.toInstant(TimeZone.currentSystemDefault()).toString()
+                intent(BookingsIntent.RescheduleBooking(bookingId, isoString))
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -128,6 +186,9 @@ fun RescheduleBookingScreen(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
+        },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
         }
     ) { paddingValues ->
         Column(
@@ -137,7 +198,6 @@ fun RescheduleBookingScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // Real Service Item
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
@@ -186,7 +246,6 @@ fun RescheduleBookingScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Date and Time Section
             Text(
                 text = "Select new date and time",
                 style = MaterialTheme.typography.titleMedium,
@@ -200,7 +259,6 @@ fun RescheduleBookingScreen(
                 modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
             )
 
-            // Date Selection
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -208,7 +266,7 @@ fun RescheduleBookingScreen(
                 items(validDates) { date ->
                     val isSelected = date == selectedDate
                     val dayOfWeek = date.dayOfWeek.name.take(3).lowercase().replaceFirstChar { it.uppercase() }
-                    val dayOfMonth = date.dayOfMonth.toString()
+                    val dayOfMonth = date.day.toString()
 
                     Surface(
                         modifier = Modifier
@@ -248,7 +306,6 @@ fun RescheduleBookingScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Time Selection
             val chunkedTimes = timeSlots.chunked(3)
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 chunkedTimes.forEach { rowTimes ->
@@ -259,8 +316,8 @@ fun RescheduleBookingScreen(
                         rowTimes.forEach { time ->
                             val slotDateTime = LocalDateTime(
                                 year = selectedDate.year,
-                                monthNumber = selectedDate.monthNumber,
-                                dayOfMonth = selectedDate.dayOfMonth,
+                                month = selectedDate.month,
+                                day = selectedDate.day,
                                 hour = time.hour,
                                 minute = time.minute
                             )
@@ -294,7 +351,6 @@ fun RescheduleBookingScreen(
                             }
                         }
 
-                        // Fill empty spaces if a row has less than 3 items
                         repeat(3 - rowTimes.size) {
                             Spacer(modifier = Modifier.weight(1f))
                         }
@@ -304,31 +360,32 @@ fun RescheduleBookingScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Confirm Button
             val isSlotSelected = selectedTime != null
             Button(
                 onClick = {
                     if (isSlotSelected) {
-                        val dateFormatted = selectedDate.format(dateFormatter)
-                        val timeFormatted = selectedTime!!.format(timeFormatter)
-                        onConfirmSlot(dateFormatted, timeFormatted)
+                        showConfirmDialog = true
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                enabled = isSlotSelected,
+                enabled = isSlotSelected && !state.isLoading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text(
-                    text = "Confirm new slot",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (isSlotSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (state.isLoading) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                } else {
+                    Text(
+                        text = "Confirm new slot",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (isSlotSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

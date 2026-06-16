@@ -1,4 +1,4 @@
-package org.example.project.home.domain.repository
+package org.example.project.booking.domain.repository
 
 import kotlinx.coroutines.flow.Flow
 import org.example.project.core.model.booking.Booking
@@ -13,4 +13,3 @@ interface BookingRepository {
     suspend fun clearAllBookings(): Result<Unit>
     fun observeBookingsByStatus(status: BookingStatus): Flow<List<Booking>>
 }
-
