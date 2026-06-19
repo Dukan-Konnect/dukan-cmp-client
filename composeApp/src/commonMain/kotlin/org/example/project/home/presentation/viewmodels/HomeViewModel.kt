@@ -18,10 +18,11 @@ import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.model.home.Banner
 import org.example.project.core.model.home.Service
 import org.example.project.core.utils.DataState
+import org.example.project.core.utils.handleLogout
 
 @Immutable
 data class HomeUiState(
-    val dialogState: DialogState? = null, // <-- Replaced isLoading with DialogState
+    val dialogState: DialogState? = null,
     val isSearchEnabled: Boolean = false,
     val userLocation: String? = "Unable to fetch location",
     val banner: Banner? = null,
@@ -31,7 +32,6 @@ data class HomeUiState(
     val searchQuery: String = "",
     val searchResults: List<Service> = emptyList()
 ) {
-    // <-- Added DialogState exactly like Mifos
     sealed interface DialogState {
         data class Error(val message: String) : DialogState
         data object Loading : DialogState
@@ -45,13 +45,13 @@ sealed interface HomeIntent {
     data object BannerClicked : HomeIntent
     data class ServiceClicked(val id: Int) : HomeIntent
     data object Retry : HomeIntent
+    data object Logout : HomeIntent
 }
 
 sealed interface HomeEffect {
     data class NavigateToService(val id: Int) : HomeEffect
     data object OpenLocationPicker : HomeEffect
     data object OpenBanner : HomeEffect
-    // Removed ShowMessage since errors are now handled by DialogState
 }
 
 class HomeViewModel(
@@ -81,6 +81,11 @@ class HomeViewModel(
             HomeIntent.BannerClicked -> emitEffect(HomeEffect.OpenBanner)
             is HomeIntent.ServiceClicked -> emitEffect(HomeEffect.NavigateToService(intent.id))
             HomeIntent.Retry -> loadAllData()
+            HomeIntent.Logout -> {
+                viewModelScope.launch {
+                    handleLogout(prefRepository)
+                }
+            }
         }
     }
 
@@ -107,7 +112,6 @@ class HomeViewModel(
 
     private fun loadAllData() {
         viewModelScope.launch {
-            // Set loading state and disable search
             _uiState.update {
                 it.copy(
                     dialogState = HomeUiState.DialogState.Loading,
@@ -115,32 +119,28 @@ class HomeViewModel(
                 )
             }
 
-            // Fetch data concurrently or sequentially
             val personalResult = homeRepository.getPersonalServices()
             val homeResult = homeRepository.getHomeServices()
             val trendingResult = homeRepository.getTrendingServices()
 
-            // Check for any errors across the network requests
             if (personalResult is DataState.Error || homeResult is DataState.Error || trendingResult is DataState.Error) {
-                // If any fail, show the error state
                 val errorMsg = (personalResult as? DataState.Error)?.exception?.message
                     ?: (homeResult as? DataState.Error)?.exception?.message
                     ?: (trendingResult as? DataState.Error)?.exception?.message
                     ?: "An unexpected error occurred"
 
                 _uiState.update {
-                    it.copy(dialogState = HomeUiState.DialogState.Error("Failed to load services: $errorMsg"))
+                    it.copy(dialogState = HomeUiState.DialogState.Error(errorMsg))
                 }
                 return@launch
             }
 
-            // If all succeed, clear the dialog state and populate data
             _uiState.update {
                 it.copy(
                     personalService = (personalResult as DataState.Success).data,
                     homeService = (homeResult as DataState.Success).data,
                     trendingService = (trendingResult as DataState.Success).data,
-                    dialogState = null, // Clears the loading/error dialog
+                    dialogState = null,
                     isSearchEnabled = true
                 )
             }

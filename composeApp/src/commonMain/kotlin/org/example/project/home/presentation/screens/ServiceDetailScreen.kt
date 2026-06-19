@@ -66,6 +66,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.koin.compose.viewmodel.koinViewModel
 import kotlinx.coroutines.flow.collect
+import org.example.project.core.presentation.GenericErrorScreen
 
 @Composable
 fun ServiceDetailScreen(
@@ -120,28 +121,12 @@ fun ServiceDetailsScreenContent(
             }
 
             uiState.errorMessage?.let { error ->
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    color = Color(0xFFFFF3F0),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = error,
-                            modifier = Modifier.weight(1f),
-                            color = Color(0xFF8A1C13)
-                        )
-                        TextButton(onClick = { intent(ServiceDetailsEvent.Retry) }) {
-                            Text("Retry")
-                        }
-                    }
-                }
+                GenericErrorScreen(
+                    title = "Failed to load service details",
+                    message = error,
+                    onRetry = { intent(ServiceDetailsEvent.Retry) },
+                    onLogout = { intent(ServiceDetailsEvent.Logout) },
+                )
             }
 
             val serviceDetails = uiState.serviceDetails ?: return@Column

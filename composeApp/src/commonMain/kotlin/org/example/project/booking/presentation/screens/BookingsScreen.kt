@@ -26,15 +26,11 @@ import org.example.project.core.model.booking.Booking
 import org.example.project.core.model.booking.BookingStatus
 import org.example.project.booking.presentation.viewmodels.BookingsViewModel
 import org.koin.compose.viewmodel.koinViewModel
-import kotlinx.datetime.Instant
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import org.example.project.booking.presentation.viewmodels.BookingsIntent
 import org.example.project.booking.util.formatDate
 import org.example.project.booking.util.formatScheduledDateString
+import org.example.project.core.presentation.GenericErrorScreen
 import org.jetbrains.compose.resources.painterResource
-import kotlin.time.ExperimentalTime
 
 @Composable
 fun BookingsScreen(
@@ -45,11 +41,9 @@ fun BookingsScreen(
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Tab state management
     val tabs = listOf("Upcoming", "Completed", "Cancelled")
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
-    // Filtered bookings based on selected tab
     val filteredBookings = remember(state.bookings, selectedTabIndex) {
         state.bookings.filter { booking ->
             when (selectedTabIndex) {
@@ -76,100 +70,108 @@ fun BookingsScreen(
             .fillMaxSize()
             .background(Color(0xFFF7F7F7))
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Header
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 20.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "My Bookings",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 20.sp,
-                        color = Color.Black
-                    )
-                }
-            }
-
-            // Tab Row
-            TabRow(
-                selectedTabIndex = selectedTabIndex,
-                containerColor = Color.White,
-                contentColor = Color(0xFF6C4DFF),
-                divider = { Divider(color = Color(0xFFE0E0E0)) }
-            ) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
-                        text = {
-                            Text(
-                                text = title,
-                                fontWeight = if (selectedTabIndex == index) FontWeight.SemiBold else FontWeight.Normal,
-                                color = if (selectedTabIndex == index) Color(0xFF6C4DFF) else Color.Gray
-                            )
-                        }
-                    )
-                }
-            }
-
-            // Content
-            if (state.isLoading) {
+        when {
+            state.isLoading -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(color = Color(0xFF6C4DFF))
                 }
-            } else if (filteredBookings.isEmpty()) {
-                // Empty state based on the selected tab
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(32.dp)
+            }
+            state.errorMessage != null -> {
+                GenericErrorScreen(
+                    title = "Failed to load bookings",
+                    message = state.errorMessage!!,
+                    onRetry = { viewModel.handleIntent(BookingsIntent.Refresh) },
+                    onLogout = { viewModel.handleIntent(BookingsIntent.Logout) }
+                )
+            }
+            else -> {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = Color.White,
                     ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_edit),
-                            contentDescription = "No bookings",
-                            modifier = Modifier.size(80.dp),
-                            tint = Color.Gray
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            "No ${tabs[selectedTabIndex].lowercase()} bookings",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.Gray
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "Your bookings will appear here",
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 20.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "My Bookings",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 20.sp,
+                                color = Color.Black
+                            )
+                        }
                     }
-                }
-            } else {
-                // Bookings list
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(filteredBookings) { booking ->
-                        BookingCard(
-                            booking = booking,
-                            onClick = { onBookingClick(booking.id) }
-                        )
+
+                    TabRow(
+                        selectedTabIndex = selectedTabIndex,
+                        containerColor = Color.White,
+                        contentColor = Color(0xFF6C4DFF),
+                        divider = { Divider(color = Color(0xFFE0E0E0)) }
+                    ) {
+                        tabs.forEachIndexed { index, title ->
+                            Tab(
+                                selected = selectedTabIndex == index,
+                                onClick = { selectedTabIndex = index },
+                                text = {
+                                    Text(
+                                        text = title,
+                                        fontWeight = if (selectedTabIndex == index) FontWeight.SemiBold else FontWeight.Normal,
+                                        color = if (selectedTabIndex == index) Color(0xFF6C4DFF) else Color.Gray
+                                    )
+                                }
+                            )
+                        }
+                    }
+
+                    if (filteredBookings.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(32.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.ic_edit),
+                                    contentDescription = "No bookings",
+                                    modifier = Modifier.size(80.dp),
+                                    tint = Color.Gray
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    "No ${tabs[selectedTabIndex].lowercase()} bookings",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.Gray
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "Your bookings will appear here",
+                                    fontSize = 14.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(filteredBookings) { booking ->
+                                BookingCard(
+                                    booking = booking,
+                                    onClick = { onBookingClick(booking.id) }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -198,7 +200,6 @@ fun BookingCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Booking header with status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -215,7 +216,6 @@ fun BookingCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Service name
             Text(
                 text = booking.subServiceName,
                 fontSize = 16.sp,
@@ -225,7 +225,6 @@ fun BookingCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Provider info
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -283,12 +282,10 @@ fun BookingCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Booking details
             Divider(color = Color(0xFFE0E0E0))
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Date and time
             if (!booking.scheduledDate.isNullOrBlank()) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -308,7 +305,6 @@ fun BookingCard(
                 }
             }
 
-            // Address
             if (!booking.address.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -330,7 +326,6 @@ fun BookingCard(
                 }
             }
 
-            // Booking date
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 "Booked on ${formatDate(booking.bookingDate)}",

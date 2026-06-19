@@ -21,6 +21,11 @@ import org.example.project.core.model.booking.CreateBookingRequest
 import org.example.project.booking.domain.repository.BookingRemoteRepository
 import org.example.project.home.domain.usecase.CreatePaymentOrderUseCase
 import org.example.project.home.presentation.navigation.SummaryRoute
+import org.example.project.core.utils.SnackbarMessage
+
+private fun String?.orGenericError(): String =
+    this?.takeIf { message -> message.isNotBlank() && message != "null" }
+        ?: SnackbarMessage.GENERIC_ERROR
 
 @Immutable
 data class SummaryUiState(
@@ -112,7 +117,7 @@ class SummaryViewModel(
                 _state.update { it.copy(customerName = event.name?.trim().orEmpty()) }
             }
 
-            is SummaryEvent.PaymentSucceeded -> saveBookingAfterPayment(event.orderId)
+            is SummaryEvent.PaymentSucceeded -> saveBookingAfterPayment()
             SummaryEvent.ProceedToPayment -> proceedToPayment()
             SummaryEvent.BackClicked -> emitEffect(SummaryEffect.NavigateBack)
             SummaryEvent.ErrorDismissed -> _state.update { it.copy(errorMessage = null) }
@@ -158,7 +163,7 @@ class SummaryViewModel(
                             )
                         }
                         .onFailure { error ->
-                            val message = "Failed to create payment order: ${error.message}"
+                            val message = error.message.orGenericError()
                             _state.update { it.copy(isLoading = false, errorMessage = message) }
                             _effect.emit(SummaryEffect.ShowMessage(message))
                         }
@@ -167,7 +172,7 @@ class SummaryViewModel(
         }
     }
 
-    private fun saveBookingAfterPayment(orderId: String) {
+    private fun saveBookingAfterPayment() {
         val booking = _state.value.booking ?: return
         val scheduledDateIso = _state.value.timeSlotIso
         val address = _state.value.address.trim()
@@ -195,9 +200,7 @@ class SummaryViewModel(
                 }
 
                 is DataState.Error -> {
-                    val message = remoteState.message.ifBlank {
-                        "Failed to confirm booking for order $orderId"
-                    }
+                    val message = remoteState.message.orGenericError()
                     _state.update { it.copy(isLoading = false, errorMessage = message) }
                     _effect.emit(SummaryEffect.ShowMessage(message))
                 }

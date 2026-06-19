@@ -1,8 +1,9 @@
 package org.example.project.payment.data.repository
 
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
-import io.ktor.client.request.header
 import io.ktor.client.request.headers
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -15,8 +16,11 @@ import io.ktor.http.isSuccess
 import io.ktor.util.encodeBase64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import org.example.project.core.log
+import org.example.project.core.utils.mapHttpStatusToUserMessage
+import org.example.project.core.utils.SnackbarMessage
 import org.example.project.payment.domain.model.CreateOrderRequest
 import org.example.project.payment.domain.model.PaymentOrder
 import org.example.project.home.domain.repository.PaymentRepository
@@ -37,7 +41,6 @@ class PaymentRepositoryImpl(
     override suspend fun createOrder(request: CreateOrderRequest): Result<PaymentOrder> {
         return withContext(Dispatchers.Default) {
             try {
-                // Normalize inputs
                 val safeCurrency = request.currency.trim().uppercase().ifEmpty { DEFAULT_CURRENCY }
                 if (request.amount <= 0) {
                     return@withContext Result.failure(IllegalArgumentException("Amount must be > 0 (in paise)"))
@@ -49,13 +52,12 @@ class PaymentRepositoryImpl(
                     receipt = request.receipt
                 )
 
-                // Helpful debug log
                 log(
                     "paymentviewmodel",
                     "Creating Razorpay order: amount=${razorpayRequest.amount}, currency=${razorpayRequest.currency}, receipt=${razorpayRequest.receipt}"
                 )
 
-                val jsonSerializer = Json { // replicate ContentNegotiation settings
+                val jsonSerializer = Json {
                     prettyPrint = true
                     isLenient = true
                     ignoreUnknownKeys = true
@@ -66,7 +68,6 @@ class PaymentRepositoryImpl(
                 val response: HttpResponse = httpClient.post("$BASE_URL/orders") {
                     contentType(ContentType.Application.Json)
 
-                    // Basic authentication with Razorpay credentials
                     val credentials = "$razorpayKeyId:$razorpayKeySecret"
                     val encodedCredentials = credentials.encodeBase64()
                     headers {
@@ -93,15 +94,22 @@ class PaymentRepositoryImpl(
                     Result.success(paymentOrder)
                 } else {
                     val errorBody = response.bodyAsText()
+                    val userMessage = mapHttpStatusToUserMessage(response.status.value)
                     log(
                         "paymentviewmodel",
                         "Failed to create order: ${response.status.value} - $errorBody"
                     )
-                    Result.failure(Exception("Failed to create order: ${response.status.value} - $errorBody"))
+                    Result.failure(Exception(userMessage))
 
                 }
+            } catch (e: ClientRequestException) {
+                Result.failure(Exception(mapHttpStatusToUserMessage(e.response.status.value), e))
+            } catch (e: ServerResponseException) {
+                Result.failure(Exception(SnackbarMessage.SERVER_ERROR, e))
+            } catch (e: IOException) {
+                Result.failure(Exception(SnackbarMessage.NETWORK_ERROR, e))
             } catch (e: Exception) {
-                Result.failure(e)
+                Result.failure(Exception(SnackbarMessage.GENERIC_ERROR, e))
             }
         }
     }

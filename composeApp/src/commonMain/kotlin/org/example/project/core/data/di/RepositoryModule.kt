@@ -12,9 +12,9 @@ import org.koin.dsl.module
 
 val RepositoryModule = module {
 
-    single<AuthRepository>{ AuthRepositoryImpl(get(),get()) }
+    single<AuthRepository>{ AuthRepositoryImpl(get(),get(), get()) }
     single<ProfileRepository> { ProfileRepositoryImpl(get()) }
 
-    single<HomeRepository> { HomeRepositoryImpl(get()) }
-    single<ServiceDetailsRepository> { ServiceDetailsRepositoryImpl(get()) }
+    single<HomeRepository> { HomeRepositoryImpl(get(), get()) }
+    single<ServiceDetailsRepository> { ServiceDetailsRepositoryImpl(get(), get()) }
 } 

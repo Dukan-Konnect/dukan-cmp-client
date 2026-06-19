@@ -11,9 +11,15 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.example.project.booking.domain.repository.BookingRemoteRepository
 import org.example.project.booking.domain.repository.BookingRepository
+import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.utils.DataState
 import org.example.project.core.model.booking.Booking
 import org.example.project.core.utils.SnackbarMessage
+import org.example.project.core.utils.handleLogout
+
+private fun String?.orGenericError(): String =
+    this?.takeIf { message -> message.isNotBlank() && message != "null" }
+        ?: SnackbarMessage.GENERIC_ERROR
 
 @Immutable
 data class BookingsUiState(
@@ -27,6 +33,7 @@ sealed interface BookingsIntent {
     data object Refresh : BookingsIntent
     data class CancelBooking(val id: String, val reason: String, val comment: String) : BookingsIntent
     data class RescheduleBooking(val id: String, val newDateIso: String) : BookingsIntent
+    data object Logout : BookingsIntent
 }
 
 sealed interface BookingsEffect {
@@ -36,7 +43,8 @@ sealed interface BookingsEffect {
 
 class BookingsViewModel(
     private val bookingRepository: BookingRepository,
-    private val bookingRemoteRepository: BookingRemoteRepository
+    private val bookingRemoteRepository: BookingRemoteRepository,
+    private val prefRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(BookingsUiState())
@@ -58,6 +66,11 @@ class BookingsViewModel(
             BookingsIntent.Refresh -> refreshFromBackend()
             is BookingsIntent.CancelBooking -> executeCancelBooking(intent.id, intent.reason, intent.comment)
             is BookingsIntent.RescheduleBooking -> executeRescheduleBooking(intent.id, intent.newDateIso)
+            BookingsIntent.Logout -> {
+                viewModelScope.launch {
+                    handleLogout(prefRepository)
+                }
+            }
         }
     }
 
@@ -65,7 +78,12 @@ class BookingsViewModel(
         viewModelScope.launch {
             bookingRepository.observeAllBookings()
                 .catch { error ->
-                    _state.update { it.copy(isLoading = false, errorMessage = "Failed to load: ${error.message}") }
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = error.message.orGenericError()
+                        )
+                    }
                 }
                 .collect { bookings ->
                     _state.update { it.copy(bookings = bookings, isLoading = false, errorMessage = null) }
@@ -75,7 +93,7 @@ class BookingsViewModel(
 
     private fun refreshFromBackend() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            _state.update { it.copy(isLoading = true, errorMessage = null) }
             when (val remoteState = bookingRemoteRepository.getMyBookings()) {
                 is DataState.Success -> {
                     try {
@@ -87,7 +105,12 @@ class BookingsViewModel(
                     } catch (_: Exception) { }
                     _state.update { it.copy(isLoading = false, errorMessage = null) }
                 }
-                is DataState.Error -> _state.update { it.copy(isLoading = false, errorMessage = remoteState.message) }
+                is DataState.Error -> _state.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = remoteState.message.orGenericError()
+                    )
+                }
                 DataState.Loading -> Unit
             }
         }
@@ -104,7 +127,7 @@ class BookingsViewModel(
                 }
                 is DataState.Error -> {
                     _state.update { it.copy(isLoading = false) }
-                    _effect.emit(BookingsEffect.ShowToast(SnackbarMessage.genericError))
+                    _effect.emit(BookingsEffect.ShowToast(SnackbarMessage.GENERIC_ERROR))
                 }
                 DataState.Loading -> Unit
             }
@@ -122,7 +145,7 @@ class BookingsViewModel(
                 }
                 is DataState.Error -> {
                     _state.update { it.copy(isLoading = false) }
-                    _effect.emit(BookingsEffect.ShowToast(SnackbarMessage.genericError))
+                    _effect.emit(BookingsEffect.ShowToast(SnackbarMessage.GENERIC_ERROR))
                 }
                 DataState.Loading -> Unit
             }

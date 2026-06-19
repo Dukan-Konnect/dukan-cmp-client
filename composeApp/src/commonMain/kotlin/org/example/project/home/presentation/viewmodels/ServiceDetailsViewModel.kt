@@ -13,7 +13,9 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.log
+import org.example.project.core.utils.handleLogout
 import org.example.project.home.domain.model.ServiceDetails
 import org.example.project.home.domain.model.ServiceProvider
 import org.example.project.home.domain.model.SubService
@@ -43,6 +45,7 @@ sealed interface ServiceDetailsEvent {
     data object BookNowClicked : ServiceDetailsEvent
     data object BackClicked : ServiceDetailsEvent
     data object Retry : ServiceDetailsEvent
+    data object Logout : ServiceDetailsEvent
     data object ErrorDismissed : ServiceDetailsEvent
 }
 
@@ -55,7 +58,8 @@ sealed interface ServiceDetailsEffect {
 
 class ServiceDetailsViewModel(
     savedStateHandle: SavedStateHandle,
-    private val repository: ServiceDetailsRepository
+    private val repository: ServiceDetailsRepository,
+    private val prefRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val serviceId = savedStateHandle.toRoute<ServiceDetailRoute>().serviceId
@@ -84,6 +88,11 @@ class ServiceDetailsViewModel(
                 clearError()
                 loadServiceDetails()
             }
+            ServiceDetailsEvent.Logout -> {
+                viewModelScope.launch {
+                    handleLogout(prefRepository)
+                }
+            }
 
             ServiceDetailsEvent.ErrorDismissed -> clearError()
         }
@@ -103,14 +112,12 @@ class ServiceDetailsViewModel(
                         }
                     }
                     .onFailure { error ->
-                        val message = "Failed to load service details: ${error.message}"
+                        val message = error.message
                         _state.update { it.copy(isLoading = false, errorMessage = message) }
-                        log("servicedetails", message)
                     }
             } catch (e: Exception) {
-                val message = "Error loading service details: ${e.message}"
+                val message = e.message
                 _state.update { it.copy(isLoading = false, errorMessage = message) }
-                log("servicedetails", message)
             }
         }
     }

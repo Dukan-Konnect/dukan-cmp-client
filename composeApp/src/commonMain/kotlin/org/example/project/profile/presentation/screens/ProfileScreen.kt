@@ -74,6 +74,8 @@ fun ProfileScreen(
         viewModel.effect.collect { effect ->
             when (effect) {
                 ProfileEffect.NavigateToManageAddress -> onNavigateToManageAddress()
+                ProfileEffect.ProfileUpdated -> Unit
+                is ProfileEffect.ShowSnackbar -> Unit
             }
         }
     }

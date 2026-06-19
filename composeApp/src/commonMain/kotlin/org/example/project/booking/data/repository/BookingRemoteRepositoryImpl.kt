@@ -6,16 +6,17 @@ import org.example.project.core.model.booking.Booking
 import org.example.project.core.model.booking.CreateBookingRequest
 import org.example.project.core.network.dto.booking.CreateBookingRequestDto
 import org.example.project.core.network.services.BookingService
+import org.example.project.core.utils.ApiCallHelper
 import org.example.project.core.utils.DataState
-import org.example.project.core.utils.safeApiCall
 import org.example.project.home.data.mapper.toDomain
 
 class BookingRemoteRepositoryImpl(
-    private val bookingService: BookingService
+    private val bookingService: BookingService,
+    private val apiCallHelper: ApiCallHelper
 ) : BookingRemoteRepository {
 
     override suspend fun createBooking(request: CreateBookingRequest): DataState<Booking> =
-        safeApiCall {
+        apiCallHelper.execute {
             bookingService.createBooking(
                 CreateBookingRequestDto(
                     subServiceId = request.subServiceId,
@@ -26,15 +27,15 @@ class BookingRemoteRepositoryImpl(
             ).toDomain()
         }
 
-    override suspend fun getMyBookings(): DataState<List<Booking>> = safeApiCall {
+    override suspend fun getMyBookings(): DataState<List<Booking>> = apiCallHelper.execute {
         bookingService.getMyBookings().map { it.toDomain() }
     }
 
-    override suspend fun cancelBooking(bookingId: String): DataState<Booking> = safeApiCall {
+    override suspend fun cancelBooking(bookingId: String): DataState<Booking> = apiCallHelper.execute {
         bookingService.cancelBooking(bookingId).toDomain()
     }
 
-    override suspend fun rescheduleBooking(bookingId: String, newScheduledDate: String): DataState<Booking> = safeApiCall {
+    override suspend fun rescheduleBooking(bookingId: String, newScheduledDate: String): DataState<Booking> = apiCallHelper.execute {
         bookingService.rescheduleBooking(
             id = bookingId,
             request = RescheduleRequestDto(newScheduledDate)

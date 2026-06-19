@@ -17,6 +17,11 @@ import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.data.repository.ProfileRepository
 import org.example.project.core.utils.DataState
 import org.example.project.booking.domain.repository.BookingRepository
+import org.example.project.core.utils.SnackbarMessage
+
+private fun String?.orGenericError(): String =
+    this?.takeIf { message -> message.isNotBlank() && message != "null" }
+        ?: SnackbarMessage.GENERIC_ERROR
 
 sealed interface ProfileIntent {
     data object LogoutClicked : ProfileIntent
@@ -25,11 +30,14 @@ sealed interface ProfileIntent {
 
 sealed interface ProfileEffect {
     data object NavigateToManageAddress : ProfileEffect
+    data object ProfileUpdated : ProfileEffect
+    data class ShowSnackbar(val message: String) : ProfileEffect
 }
 
 @Immutable
 data class ProfileUiState(
     val name: String? = null,
+    val email: String? = null,
     val phoneNumber: String? = null,
     val address: String? = null,
     val isLoading: Boolean = false
@@ -87,6 +95,7 @@ class ProfileViewModel(
                 _state.update {
                     it.copy(
                         name = userData.name.takeIf { it.isNotBlank() },
+                        email = userData.email.takeIf { it.isNotBlank() },
                         phoneNumber = userData.phoneNumber.takeIf { it.isNotBlank() },
                         address = userData.address.takeIf { it.isNotBlank() },
                         isLoading = false
@@ -104,19 +113,41 @@ class ProfileViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
 
-            when (val result = profileRepository.updateNameAndEmail(trimmedName, trimmedEmail, normalizedPhone)) {
-                is DataState.Success<*> -> {
-                    _state.update { it.copy(isLoading = false, name = trimmedName, phoneNumber = normalizedPhone) }
-                    preferencesRepository.updateName(trimmedName)
-                    preferencesRepository.updatePhoneNumber(normalizedPhone)
-                    preferencesRepository.updateEmail(trimmedEmail)
+            try {
+                when (val result = profileRepository.updateNameAndEmail(trimmedName, trimmedEmail, normalizedPhone)) {
+                    is DataState.Success<*> -> {
+                        preferencesRepository.updateName(trimmedName)
+                        preferencesRepository.updateEmail(trimmedEmail)
+                        preferencesRepository.updatePhoneNumber(normalizedPhone)
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                name = trimmedName,
+                                email = trimmedEmail,
+                                phoneNumber = normalizedPhone
+                            )
+                        }
+                        _effect.emit(ProfileEffect.ProfileUpdated)
+                    }
+                    is DataState.Error -> {
+                        _state.update { it.copy(isLoading = false) }
+                        _effect.emit(
+                            ProfileEffect.ShowSnackbar(
+                                result.message.orGenericError()
+                            )
+                        )
+                    }
+                    is DataState.Loading -> {
+                        _state.update { it.copy(isLoading = true) }
+                    }
                 }
-                is DataState.Error -> {
-                    _state.update { it.copy(isLoading = false) }
-                }
-                is DataState.Loading -> {
-                    _state.update { it.copy(isLoading = true) }
-                }
+            } catch (exception: Exception) {
+                _state.update { it.copy(isLoading = false) }
+                _effect.emit(
+                    ProfileEffect.ShowSnackbar(
+                        exception.message.orGenericError()
+                    )
+                )
             }
         }
     }

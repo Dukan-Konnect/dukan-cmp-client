@@ -11,7 +11,6 @@ class CreatePaymentOrderUseCase(
     private val paymentRepository: PaymentRepository
 ) {
     suspend operator fun invoke(amountInCents: Long): Result<PaymentOrder> {
-        // Generate a unique receipt ID in a multiplatform-safe way using Random only
         val numericSuffix = abs(Random.nextLong())
         val receipt = "rcpt_${numericSuffix}_${randomAlphaNum()}"
 

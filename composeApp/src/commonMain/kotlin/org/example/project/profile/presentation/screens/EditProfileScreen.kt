@@ -21,6 +21,7 @@ import dukaankonnect.composeapp.generated.resources.Res
 import dukaankonnect.composeapp.generated.resources.ic_arrow_back
 import dukaankonnect.composeapp.generated.resources.ic_edit
 import dukaankonnect.composeapp.generated.resources.ic_person_large
+import org.example.project.profile.presentation.viewmodels.ProfileEffect
 import org.example.project.profile.presentation.viewmodels.ProfileViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -32,14 +33,35 @@ fun EditProfileScreen(
     onBack: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    var fullName by remember { mutableStateOf(state.name ?: "") }
-    var email by remember { mutableStateOf("") }
-    var mobileNumber by remember { mutableStateOf(state.phoneNumber ?: "") }
+    val originalName = state.name.orEmpty()
+    val originalEmail = state.email.orEmpty()
+    val originalMobileNumber = state.phoneNumber.orEmpty()
 
-    LaunchedEffect(state) {
-        fullName = state.name ?: ""
-        mobileNumber = state.phoneNumber ?: ""
+    var fullName by remember(originalName, originalEmail, originalMobileNumber) { mutableStateOf(originalName) }
+    var email by remember(originalName, originalEmail, originalMobileNumber) { mutableStateOf(originalEmail) }
+    var mobileNumber by remember(originalName, originalEmail, originalMobileNumber) { mutableStateOf(originalMobileNumber) }
+
+    val canSaveChanges by remember(
+        fullName,
+        email,
+        mobileNumber,
+        originalName,
+        originalEmail,
+        originalMobileNumber,
+        state.isLoading
+    ) {
+        derivedStateOf {
+            val normalizedCurrentMobile = mobileNumber.removePrefix("+91").trim()
+            val normalizedOriginalMobile = originalMobileNumber.removePrefix("+91").trim()
+
+            !state.isLoading && (
+                fullName.trim() != originalName.trim() ||
+                    email.trim() != originalEmail.trim() ||
+                    normalizedCurrentMobile != normalizedOriginalMobile
+                )
+        }
     }
 
     Scaffold(
@@ -67,8 +89,21 @@ fun EditProfileScreen(
                 )
             )
         },
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
         containerColor = Color.White
     ) { paddingValues ->
+        LaunchedEffect(viewModel) {
+            viewModel.effect.collect { effect ->
+                when (effect) {
+                    ProfileEffect.NavigateToManageAddress -> Unit
+                    ProfileEffect.ProfileUpdated -> onBack()
+                    is ProfileEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+                }
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -77,7 +112,6 @@ fun EditProfileScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Profile Picture Section
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -87,7 +121,6 @@ fun EditProfileScreen(
                 Box(
                     modifier = Modifier.size(100.dp)
                 ) {
-                    // Profile Image
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -102,7 +135,6 @@ fun EditProfileScreen(
                         )
                     }
 
-                    // Camera Icon Button
                     Box(
                         modifier = Modifier
                             .size(32.dp)
@@ -123,13 +155,11 @@ fun EditProfileScreen(
                 }
             }
 
-            // Form Fields Container
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp)
             ) {
-                // Full Name Field
                 Text(
                     "Full Name",
                     fontSize = 13.sp,
@@ -157,7 +187,6 @@ fun EditProfileScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Email Field
                 Text(
                     "Email",
                     fontSize = 13.sp,
@@ -167,12 +196,6 @@ fun EditProfileScreen(
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    placeholder = {
-                        Text(
-                            "johnkevin787@gmail.com",
-                            color = Color.Gray
-                        )
-                    },
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFF6C4DFF),
@@ -191,7 +214,6 @@ fun EditProfileScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // Mobile Number Field
                 Text(
                     "Mobile Number",
                     fontSize = 13.sp,
@@ -222,14 +244,15 @@ fun EditProfileScreen(
 
                 Spacer(modifier = Modifier.height(48.dp))
 
-                // Save Changes Button
                 Button(
                     onClick = {
                         viewModel.updateProfile(fullName, mobileNumber, email)
-                        onBack()
                     },
+                    enabled = canSaveChanges,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF6C4DFF)
+                        containerColor = Color(0xFF6C4DFF),
+                        disabledContainerColor = Color(0xFF6C4DFF).copy(alpha = 0.35f),
+                        disabledContentColor = Color.White.copy(alpha = 0.7f)
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -249,4 +272,3 @@ fun EditProfileScreen(
         }
     }
 }
-

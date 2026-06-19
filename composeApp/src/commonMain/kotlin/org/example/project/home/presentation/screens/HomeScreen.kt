@@ -38,6 +38,7 @@ import dukaankonnect.composeapp.generated.resources.manv
 import org.example.project.core.model.home.Banner
 import org.example.project.core.model.home.Service
 import org.example.project.core.network.dto.home.ServiceCategory
+import org.example.project.core.presentation.GenericErrorScreen
 import org.example.project.home.presentation.viewmodels.HomeEffect
 import org.example.project.home.presentation.viewmodels.HomeIntent
 import org.example.project.home.presentation.viewmodels.HomeUiState
@@ -56,7 +57,6 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Effects are only for navigation now
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
             when (effect) {
@@ -69,34 +69,32 @@ fun HomeScreen(
 
     val intent: (HomeIntent) -> Unit = viewModel::handleIntent
 
-    // Main Container
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF7F7F7))
     ) {
-        // Condition 1: If DialogState is null, we successfully have data. Show content.
         if (uiState.dialogState == null) {
             HomeScreenContent(
                 uiState = uiState,
                 intent = intent
             )
         }
-        // Condition 2: Render Loading or Error based on DialogState
         else {
             HomeDialogs(
                 state = uiState,
-                onRetry = { intent(HomeIntent.Retry) }
+                onRetry = { intent(HomeIntent.Retry) },
+                onLogout = { intent(HomeIntent.Logout) }
             )
         }
     }
 }
 
-// <-- Added exact DialogState component replication from Mifos
 @Composable
 private fun HomeDialogs(
     state: HomeUiState,
     onRetry: () -> Unit,
+    onLogout: () -> Unit,
 ) {
     when (val dialogState = state.dialogState) {
         is HomeUiState.DialogState.Loading -> {
@@ -108,37 +106,12 @@ private fun HomeDialogs(
             }
         }
         is HomeUiState.DialogState.Error -> {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "Oops! Something went wrong",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = dialogState.message,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Button(
-                        onClick = onRetry,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF)),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(text = "Try Again", color = Color.White)
-                    }
-                }
-            }
+            GenericErrorScreen(
+                title = "Failed to load services",
+                message = dialogState.message,
+                onRetry = onRetry,
+                onLogout = onLogout
+            )
         }
         null -> Unit
     }
@@ -446,17 +419,20 @@ fun HomeScreenPreview() {
         searchQuery = ""
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (previewState.dialogState == null) {
-            HomeScreenContent(
-                uiState = previewState,
-                intent = {}
-            )
-        } else {
-            HomeDialogs(
-                state = previewState,
-                onRetry = {}
-            )
+    MaterialTheme {
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (previewState.dialogState == null) {
+                HomeScreenContent(
+                    uiState = previewState,
+                    intent = {}
+                )
+            } else {
+                HomeDialogs(
+                    state = previewState,
+                    onRetry = {},
+                    onLogout = {}
+                )
+            }
         }
     }
 }

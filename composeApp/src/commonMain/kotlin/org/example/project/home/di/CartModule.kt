@@ -23,7 +23,7 @@ val cartModule = module {
 
     // Repositories
     single<BookingRepository> { BookingRepositoryImpl(get()) }
-    single<BookingRemoteRepository> { BookingRemoteRepositoryImpl(get()) }
+    single<BookingRemoteRepository> { BookingRemoteRepositoryImpl(get(), get()) }
     single<AddressRepository> { AddressRepositoryImpl(get()) }
 
     // ViewModels

@@ -847,6 +847,10 @@ fun SelectTimeSlotBottomSheetContent(
         Spacer(modifier = Modifier.height(24.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
+                Text("Cancel")
+            }
+
             Button(
                 onClick = {
                     if (selectedTime != null) {
@@ -869,10 +873,6 @@ fun SelectTimeSlotBottomSheetContent(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF))
             ) {
                 Text("Confirm")
-            }
-
-            TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
-                Text("Cancel")
             }
         }
     }
