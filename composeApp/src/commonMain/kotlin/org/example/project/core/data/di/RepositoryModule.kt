@@ -1,8 +1,10 @@
 package org.example.project.core.data.di
 
 import org.example.project.core.data.repository.AuthRepository
+import org.example.project.core.data.repository.FcmRepository
 import org.example.project.core.data.repository.ProfileRepository
 import org.example.project.core.data.repositoryImp.AuthRepositoryImpl
+import org.example.project.core.data.repositoryImp.FcmRepositoryImpl
 import org.example.project.core.data.repositoryImp.ProfileRepositoryImpl
 import org.example.project.core.data.repositoryImp.HomeRepositoryImpl
 import org.example.project.home.data.repository.ServiceDetailsRepositoryImpl
@@ -13,6 +15,7 @@ import org.koin.dsl.module
 val RepositoryModule = module {
 
     single<AuthRepository>{ AuthRepositoryImpl(get(),get(), get()) }
+    single<FcmRepository>{ FcmRepositoryImpl(get(), get()) }
     single<ProfileRepository> { ProfileRepositoryImpl(get()) }
 
     single<HomeRepository> { HomeRepositoryImpl(get(), get()) }

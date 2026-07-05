@@ -43,6 +43,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -94,6 +95,7 @@ fun SummaryScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     val addressValue = state.address.takeIf { it.isNotBlank() }
 
     var showAddressSheet by remember { mutableStateOf(false) }
@@ -105,17 +107,24 @@ fun SummaryScreen(
     var paymentPhoneNumber by remember { mutableStateOf("") }
 
     LaunchedEffect(viewModel) {
+        println("[SummaryScreen] collecting viewModel effects")
         viewModel.effect.collect { effect ->
+            println("[SummaryScreen] effect received=$effect")
             when (effect) {
                 SummaryEffect.NavigateBack -> onBack()
-                is SummaryEffect.NavigateToBookings -> onPay(effect.message)
+                is SummaryEffect.NavigateToBookings -> {
+                    println("[SummaryScreen] NavigateToBookings message=${effect.message}")
+                    onPay(effect.message)
+                }
                 is SummaryEffect.NavigateToPayment -> {
+                    println("[SummaryScreen] NavigateToPayment orderId=${effect.orderId} amount=${effect.amount} phone=${effect.phoneNumber}")
                     paymentOrderId = effect.orderId
                     paymentAmount = effect.amount
                     paymentPhoneNumber = effect.phoneNumber
                 }
 
                 is SummaryEffect.ShowMessage -> launch {
+                    println("[SummaryScreen] ShowMessage=${effect.message}")
                     snackbarHostState.showSnackbar(effect.message)
                 }
             }
@@ -123,14 +132,21 @@ fun SummaryScreen(
     }
 
     paymentOrderId?.let { orderId ->
+        println("[SummaryScreen] LaunchPaymentActivity orderId=$orderId amount=$paymentAmount phone=$paymentPhoneNumber")
         LaunchPaymentActivity(
             orderId = orderId,
             amount = paymentAmount,
             phoneNumber = paymentPhoneNumber,
             onResult = { success ->
+                println("[SummaryScreen] payment result orderId=$orderId success=$success")
                 paymentOrderId = null
                 if (success) {
                     viewModel.onEvent(SummaryEvent.PaymentSucceeded(orderId))
+                } else {
+                    coroutineScope.launch {
+                        println("[SummaryScreen] payment failed snackbar")
+                        snackbarHostState.showSnackbar("Payment failed")
+                    }
                 }
             }
         )

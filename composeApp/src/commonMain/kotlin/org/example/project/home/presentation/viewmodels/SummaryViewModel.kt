@@ -95,6 +95,7 @@ class SummaryViewModel(
     }
 
     fun onEvent(event: SummaryEvent) {
+        println("[SummaryViewModel] onEvent=$event")
         when (event) {
             is SummaryEvent.UpdatePhoneNumber -> {
                 _state.update { it.copy(phoneNumber = event.phoneNumber.trim()) }
@@ -143,6 +144,7 @@ class SummaryViewModel(
 
     private fun proceedToPayment() {
         val currentState = _state.value
+        println("[SummaryViewModel] proceedToPayment serviceId=${currentState.booking?.serviceId} subServiceId=${currentState.booking?.subServiceId} amount=${currentState.amountToPayCents} phone=${currentState.phoneNumber} address=${currentState.address} timeSlot=${currentState.timeSlotIso}")
         when {
             currentState.booking == null -> emitEffect(SummaryEffect.ShowMessage("Booking details are missing"))
             currentState.phoneNumber.isBlank() -> emitEffect(SummaryEffect.ShowMessage("Please add phone number"))
@@ -176,13 +178,16 @@ class SummaryViewModel(
         val booking = _state.value.booking ?: return
         val scheduledDateIso = _state.value.timeSlotIso
         val address = _state.value.address.trim()
+        println("[SummaryViewModel] saveBookingAfterPayment serviceId=${booking.serviceId} subServiceId=${booking.subServiceId} scheduledDateIso=$scheduledDateIso address=$address")
 
         if (scheduledDateIso.isNullOrBlank() || address.isBlank()) {
+            println("[SummaryViewModel] saveBookingAfterPayment missing details")
             emitEffect(SummaryEffect.ShowMessage("Missing booking details"))
             return
         }
 
         viewModelScope.launch {
+            println("[SummaryViewModel] createBooking request starting")
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             when (
                 val remoteState = bookingRemoteRepository.createBooking(
@@ -195,17 +200,19 @@ class SummaryViewModel(
                 )
             ) {
                 is DataState.Success -> {
+                    println("[SummaryViewModel] createBooking success response=${remoteState.data}")
                     _state.update { it.copy(isLoading = false) }
                     _effect.emit(SummaryEffect.NavigateToBookings("Booking successful"))
                 }
 
                 is DataState.Error -> {
+                    println("[SummaryViewModel] createBooking error message=${remoteState.message}")
                     val message = remoteState.message.orGenericError()
                     _state.update { it.copy(isLoading = false, errorMessage = message) }
                     _effect.emit(SummaryEffect.ShowMessage(message))
                 }
 
-                DataState.Loading -> Unit
+                DataState.Loading -> println("[SummaryViewModel] createBooking loading state")
             }
         }
     }

@@ -9,6 +9,8 @@ data class UserData(
     val address: String = "",
     val email: String = "",
     val token: String = "",
+    val fcmToken: String = "",
+    val syncedFcmToken: String = "",
     val hasSeenOnboarding: Boolean = false,
     val isLoggedIn: Boolean = false
 ) {

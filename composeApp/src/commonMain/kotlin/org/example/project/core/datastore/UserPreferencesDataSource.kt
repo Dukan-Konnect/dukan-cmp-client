@@ -70,6 +70,19 @@ class UserPreferencesDataSource(
         updateUserData(updatedData)
     }
 
+    suspend fun updateFcmToken(newToken: String) {
+        val updatedData = userData.value.copy(fcmToken = newToken)
+        updateUserData(updatedData)
+    }
+
+    suspend fun markFcmTokenSynced(token: String) {
+        val updatedData = userData.value.copy(
+            fcmToken = token,
+            syncedFcmToken = token
+        )
+        updateUserData(updatedData)
+    }
+
     suspend fun setLoggedIn(isLoggedIn: Boolean) {
         val updatedData = userData.value.copy(isLoggedIn = isLoggedIn)
         updateUserData(updatedData)

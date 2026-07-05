@@ -36,6 +36,14 @@ class UserPreferencesRepositoryImpl(
         localDataSource.updateToken(token)
     }
 
+    override suspend fun updateFcmToken(token: String) {
+        localDataSource.updateFcmToken(token)
+    }
+
+    override suspend fun markFcmTokenSynced(token: String) {
+        localDataSource.markFcmTokenSynced(token)
+    }
+
     override suspend fun setLoggedIn(isLoggedIn: Boolean) {
         localDataSource.setLoggedIn(isLoggedIn)
     }

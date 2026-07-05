@@ -37,6 +37,7 @@ import dukaankonnect.composeapp.generated.resources.ic_search
 import dukaankonnect.composeapp.generated.resources.manv
 import org.example.project.core.model.home.Banner
 import org.example.project.core.model.home.Service
+import org.example.project.core.notifications.HomeNotificationPermissionGate
 import org.example.project.core.network.dto.home.ServiceCategory
 import org.example.project.core.presentation.GenericErrorScreen
 import org.example.project.home.presentation.viewmodels.HomeEffect
@@ -55,6 +56,8 @@ fun HomeScreen(
     onLocationClick: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel()
 ) {
+    HomeNotificationPermissionGate()
+
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(viewModel) {
@@ -401,7 +404,7 @@ fun ServiceItem(
     }
 }
 
-@Preview
+@Preview()
 @Composable
 fun HomeScreenPreview() {
     val dummyServices = listOf(

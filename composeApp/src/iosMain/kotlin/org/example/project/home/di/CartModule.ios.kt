@@ -1,8 +1,12 @@
 package org.example.project.home.di
 
+import org.example.project.booking.domain.repository.BookingRepository
+import org.example.project.booking.data.repository.InMemoryBookingRepository
+import org.example.project.profile.data.repository.InMemoryAddressRepository
+import org.example.project.profile.domain.repository.AddressRepository
 import org.koin.dsl.module
 
-// Placeholder for iOS - will be implemented later
 actual val cartPlatformModule = module {
-    // iOS-specific database creation will go here
+    single<BookingRepository> { InMemoryBookingRepository() }
+    single<AddressRepository> { InMemoryAddressRepository() }
 }

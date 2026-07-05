@@ -13,6 +13,8 @@ interface UserPreferencesRepository {
     suspend fun updatePhoneNumber(phoneNumber: String)
     suspend fun updateAddress(address: String)
     suspend fun updateToken(token: String)
+    suspend fun updateFcmToken(token: String)
+    suspend fun markFcmTokenSynced(token: String)
     suspend fun setLoggedIn(isLoggedIn: Boolean)
 
     suspend fun logOut()

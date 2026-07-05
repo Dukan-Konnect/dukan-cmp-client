@@ -1,4 +1,3 @@
-import org.gradle.kotlin.dsl.implementation
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -10,6 +9,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
     alias(libs.plugins.ktorfit)
+    id("com.google.gms.google-services")
 }
 ktorfit {
     compilerPluginVersion.set("2.3.3")
@@ -53,6 +53,7 @@ kotlin {
             implementation(libs.androidx.core.splashscreen)
 
             implementation(libs.coil.network.okhttp)
+            implementation(libs.androidx.core.ktx)
 
             // OkHttp (network client used by the fetcher)
             implementation(libs.okhttp)
@@ -67,6 +68,10 @@ kotlin {
             implementation(libs.compottie)
             // Need Ktor to load animations from the network natively
             implementation(libs.compottie.network)
+
+            // Firebase
+            implementation(project.dependencies.platform("com.google.firebase:firebase-bom:34.15.0"))
+            implementation(libs.google.firebase.messaging.ktx)
         }
         iosMain.dependencies {
             // Ktor Darwin engine for iOS
@@ -101,7 +106,6 @@ kotlin {
             implementation(libs.multiplatform.settings.serialization)
             implementation(libs.multiplatform.settings.coroutines)
             implementation(libs.coil3.coil.compose)
-            // Pick one based on your Ktor version:
             // For Ktor 3.x:
             implementation(libs.coil.network.ktor3)
             implementation(libs.androidx.room.runtime)
@@ -159,12 +163,8 @@ dependencies {
 
         // Room
         add("kspAndroid", libs.androidx.room.compiler)
-//        add("kspIosSimulatorArm64", libs.androidx.room.compiler)
-//        add("kspIosX64", libs.androidx.room.compiler)
-//        add("kspIosArm64", libs.androidx.room.compiler)
 
 }
 room {
     schemaDirectory("$projectDir/schemas")
 }
-

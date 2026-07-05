@@ -13,6 +13,7 @@ import de.jensklingenberg.ktorfit.Ktorfit
 import io.ktor.client.HttpClient
 import org.example.project.core.network.services.createAuthenticationService
 import org.example.project.core.network.services.createBookingService
+import org.example.project.core.network.services.createFcmService
 import org.example.project.core.network.services.createHomeService
 import org.example.project.core.network.services.createProfileService
 import org.example.project.core.network.services.createServiceDetailsService
@@ -30,6 +31,8 @@ class KtorfitClient(ktorfit: Ktorfit) {
     internal val bookingApi by lazy { ktorfit.createBookingService() }
 
     internal val serviceDetailsApi by lazy { ktorfit.createServiceDetailsService() }
+
+    internal val fcmApi by lazy { ktorfit.createFcmService() }
 
     class Builder internal constructor() {
         private lateinit var baseURL: String

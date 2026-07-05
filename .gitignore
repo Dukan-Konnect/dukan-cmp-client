@@ -19,3 +19,4 @@ captures
 node_modules/
 RazorpayConfig.kt
 /composeApp/src/commonMain/kotlin/org/example/project/core/config/RazorpayConfig.kt
+/composeApp/google-services.json

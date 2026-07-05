@@ -6,6 +6,7 @@ import org.example.project.core.network.KtorfitClient
 import org.example.project.core.network.ktorHttpClient
 import org.example.project.core.network.services.BookingService
 import org.example.project.core.network.services.AuthenticationService
+import org.example.project.core.network.services.FcmService
 import org.example.project.core.network.services.HomeService
 import org.example.project.core.network.services.ProfileService
 import org.example.project.core.network.services.ServiceDetailsService
@@ -54,6 +55,10 @@ val networkModule = module {
 
     single<ServiceDetailsService> {
         get<KtorfitClient>().serviceDetailsApi
+    }
+
+    single<FcmService> {
+        get<KtorfitClient>().fcmApi
     }
 
 

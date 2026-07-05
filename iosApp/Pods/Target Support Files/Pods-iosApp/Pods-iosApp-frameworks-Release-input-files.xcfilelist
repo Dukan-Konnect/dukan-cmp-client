@@ -1,0 +1,4 @@
+${PODS_ROOT}/Target Support Files/Pods-iosApp/Pods-iosApp-frameworks.sh
+${PODS_XCFRAMEWORKS_BUILD_DIR}/razorpay-pod/RazorpayStandard.framework/RazorpayStandard
+${PODS_XCFRAMEWORKS_BUILD_DIR}/razorpay-pod/RazorpayCore.framework/RazorpayCore
+${PODS_XCFRAMEWORKS_BUILD_DIR}/razorpay-pod/Razorpay.framework/Razorpay

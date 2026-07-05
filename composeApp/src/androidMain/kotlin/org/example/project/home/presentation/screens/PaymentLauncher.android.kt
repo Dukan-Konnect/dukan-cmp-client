@@ -24,6 +24,7 @@ actual fun LaunchPaymentActivity(
         when (result.resultCode) {
             Activity.RESULT_OK -> onResult(true)
             Activity.RESULT_CANCELED -> onResult(false)
+            else -> onResult(false)
         }
     }
 
@@ -36,4 +37,3 @@ actual fun LaunchPaymentActivity(
         launcher.launch(intent)
     }
 }
-
