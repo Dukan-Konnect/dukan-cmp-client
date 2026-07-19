@@ -4,9 +4,9 @@ import kotlin.math.abs
 import kotlin.random.Random
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import org.example.project.home.data.local.dao.AddressDao
-import org.example.project.home.data.local.mappers.toDomain
-import org.example.project.home.data.local.mappers.toEntity
+import org.example.project.profile.data.local.dao.AddressDao
+import org.example.project.profile.data.local.mappers.toDomain
+import org.example.project.profile.data.local.mappers.toEntity
 import org.example.project.home.data.local.util.getCurrentTimeMillis
 import org.example.project.profile.domain.model.SavedAddress
 import org.example.project.profile.domain.repository.AddressRepository

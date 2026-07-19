@@ -23,7 +23,7 @@ import org.example.project.core.utils.mapHttpStatusToUserMessage
 import org.example.project.core.utils.SnackbarMessage
 import org.example.project.payment.domain.model.CreateOrderRequest
 import org.example.project.payment.domain.model.PaymentOrder
-import org.example.project.home.domain.repository.PaymentRepository
+import org.example.project.payment.domain.repository.PaymentRepository
 import org.example.project.payment.data.model.RazorpayOrderRequest
 import org.example.project.payment.data.model.RazorpayOrderResponse
 

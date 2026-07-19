@@ -4,16 +4,17 @@ import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.cinterop.ExperimentalForeignApi
+import org.example.project.core.data.database.AppDatabase
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
 
 @OptIn(ExperimentalForeignApi::class)
-fun createCartDatabase(): CartDatabase {
-    val dbFileName = databasePath(CartDatabase.DATABASE_NAME)
+fun createAppDatabase(): AppDatabase {
+    val dbFileName = databasePath(AppDatabase.DATABASE_NAME)
 
-    return Room.databaseBuilder<CartDatabase>(name = dbFileName)
+    return Room.databaseBuilder<AppDatabase>(name = dbFileName)
         .setDriver(BundledSQLiteDriver())
         .setQueryCoroutineContext(Dispatchers.Default)
         .fallbackToDestructiveMigration(dropAllTables = true)

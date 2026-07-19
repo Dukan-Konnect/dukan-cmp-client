@@ -12,7 +12,7 @@ import androidx.annotation.RequiresPermission
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import org.example.project.home.domain.model.UserLocation
+import org.example.project.core.model.location.UserLocation
 import kotlin.coroutines.resume
 
 /**

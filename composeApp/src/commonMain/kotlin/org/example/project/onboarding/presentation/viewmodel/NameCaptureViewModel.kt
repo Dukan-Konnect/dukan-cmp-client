@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.example.project.core.data.repository.ProfileRepository
+import org.example.project.profile.domain.repository.ProfileRepository
 import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.utils.DataState
 import org.example.project.onboarding.presentation.navigation.NameCaptureRoute

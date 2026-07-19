@@ -21,7 +21,7 @@ import org.example.project.core.model.booking.CreateBookingRequest
 import org.example.project.booking.domain.repository.BookingRemoteRepository
 import org.example.project.profile.domain.repository.AddressRepository
 import org.example.project.profile.domain.model.SavedAddress
-import org.example.project.home.domain.usecase.CreatePaymentOrderUseCase
+import org.example.project.payment.domain.usecase.CreatePaymentOrderUseCase
 import org.example.project.home.presentation.navigation.SummaryRoute
 import org.example.project.core.utils.SnackbarMessage
 

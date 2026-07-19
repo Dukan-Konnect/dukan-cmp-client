@@ -23,7 +23,6 @@ val supabaseModule = module {
             install(Postgrest)
 
             install(Auth) {
-                // PKCE flow for Android
                 scheme = "io.jan.supabase"
                 host = "login"
                 flowType = FlowType.PKCE

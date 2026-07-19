@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.example.project.core.navigation.EditAddressRoute
 import org.example.project.core.utils.location.LocationProvider
-import org.example.project.home.domain.model.UserLocation
 import org.example.project.profile.domain.repository.AddressRepository
 import org.example.project.profile.domain.model.SavedAddress
 import org.example.project.core.datastore.UserPreferencesRepository

@@ -1,0 +1,38 @@
+package org.example.project.profile.data.local.mappers
+
+import org.example.project.profile.data.local.entities.SavedAddressEntity
+import org.example.project.home.data.local.util.getCurrentTimeMillis
+import org.example.project.profile.domain.model.SavedAddress
+
+fun SavedAddressEntity.toDomain(): SavedAddress = SavedAddress(
+    id = id,
+    label = label,
+    houseNumber = houseNumber,
+    street = street,
+    city = city,
+    state = state,
+    landmark = landmark,
+    phone = phone,
+    latitude = latitude,
+    longitude = longitude,
+    isDefault = isDefault
+)
+
+fun SavedAddress.toEntity(
+    createdAt: Long = getCurrentTimeMillis(),
+    updatedAt: Long = getCurrentTimeMillis()
+): SavedAddressEntity = SavedAddressEntity(
+    id = id,
+    label = label,
+    houseNumber = houseNumber,
+    street = street,
+    city = city,
+    state = state,
+    landmark = landmark,
+    phone = phone,
+    latitude = latitude ?: 0.0,
+    longitude = longitude ?: 0.0,
+    isDefault = isDefault,
+    createdAt = createdAt,
+    updatedAt = updatedAt
+)

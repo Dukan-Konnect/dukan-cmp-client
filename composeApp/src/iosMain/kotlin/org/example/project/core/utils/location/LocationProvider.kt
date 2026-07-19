@@ -3,7 +3,7 @@ package org.example.project.core.utils.location
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
 import kotlinx.coroutines.suspendCancellableCoroutine
-import org.example.project.home.domain.model.UserLocation
+import org.example.project.core.model.location.UserLocation
 import platform.CoreLocation.CLGeocoder
 
 import platform.CoreLocation.CLLocation

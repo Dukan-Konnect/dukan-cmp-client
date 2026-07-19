@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.example.project.core.data.repository.HomeRepository
+import org.example.project.home.domain.repository.HomeRepository
 import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.model.home.Banner
 import org.example.project.core.model.home.Service

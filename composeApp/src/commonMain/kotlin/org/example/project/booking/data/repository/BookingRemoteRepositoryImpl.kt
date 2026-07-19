@@ -8,7 +8,7 @@ import org.example.project.core.network.dto.booking.CreateBookingRequestDto
 import org.example.project.core.network.services.BookingService
 import org.example.project.core.utils.ApiCallHelper
 import org.example.project.core.utils.DataState
-import org.example.project.home.data.mapper.toDomain
+import org.example.project.booking.data.mapper.toDomain
 
 class BookingRemoteRepositoryImpl(
     private val bookingService: BookingService,
