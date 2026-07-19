@@ -3,7 +3,7 @@ package org.example.project.home.data.repository
 import org.example.project.core.network.services.ServiceDetailsService
 import org.example.project.core.utils.ApiCallHelper
 import org.example.project.core.utils.DataState
-import org.example.project.booking.data.mapper.toDomain
+import org.example.project.home.data.mapper.toDomain
 import org.example.project.home.domain.model.ServiceDetails
 import org.example.project.home.domain.model.ServiceProvider
 import org.example.project.home.domain.repository.ServiceDetailsRepository
