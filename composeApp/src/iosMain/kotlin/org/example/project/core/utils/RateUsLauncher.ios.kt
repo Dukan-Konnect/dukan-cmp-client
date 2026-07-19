@@ -15,9 +15,9 @@ actual fun rememberRateUsLauncher(): () -> Unit {
             val application = UIApplication.sharedApplication
 
             if (application.canOpenURL(appStoreUrl)) {
-                application.openURL(appStoreUrl)
+                application.openURL(appStoreUrl, emptyMap<Any?, Any>(), null)
             } else {
-                application.openURL(webUrl)
+                application.openURL(webUrl, emptyMap<Any?, Any>(), null)
             }
         }
     }

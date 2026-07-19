@@ -68,6 +68,7 @@ kotlin {
             implementation(libs.compottie)
             // Need Ktor to load animations from the network natively
             implementation(libs.compottie.network)
+            implementation(libs.ramani.maplibre)
 
             // Firebase
             implementation(project.dependencies.platform("com.google.firebase:firebase-bom:34.15.0"))
@@ -163,6 +164,8 @@ dependencies {
 
         // Room
         add("kspAndroid", libs.androidx.room.compiler)
+        add("kspIosSimulatorArm64", libs.androidx.room.compiler)
+        add("kspIosArm64", libs.androidx.room.compiler)
 
 }
 room {

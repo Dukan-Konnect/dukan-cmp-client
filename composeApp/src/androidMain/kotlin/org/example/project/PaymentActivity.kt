@@ -51,7 +51,7 @@ class PaymentActivity: Activity(), PaymentResultWithDataListener, ExternalWallet
         try {
             Toast.makeText(
                 this,
-                "Payment failed: $p1",
+                "Payment failed",
                 Toast.LENGTH_LONG
             ).show()
             setResult(RESULT_CANCELED)

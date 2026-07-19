@@ -102,6 +102,14 @@ private suspend fun requestNotificationPermission(): Boolean = suspendCancellabl
     val options = UNAuthorizationOptionAlert or UNAuthorizationOptionBadge or UNAuthorizationOptionSound
     UNUserNotificationCenter.currentNotificationCenter()
         .requestAuthorizationWithOptions(options) { granted, _ ->
+            if (granted) {
+                platform.darwin.dispatch_async(platform.darwin.dispatch_get_main_queue()) {
+                    platform.Foundation.NSNotificationCenter.defaultCenter.postNotificationName(
+                        "RequestPushRegistration", 
+                        null
+                    )
+                }
+            }
             if (continuation.isActive) {
                 continuation.resume(granted)
             }

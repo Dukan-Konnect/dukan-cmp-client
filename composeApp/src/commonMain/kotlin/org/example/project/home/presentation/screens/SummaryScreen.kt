@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -91,7 +93,7 @@ fun SummaryScreen(
     viewModel: SummaryViewModel = koinViewModel(),
     onBack: () -> Unit = {},
     onPay: (String) -> Unit = {},
-    onCouponsClick: () -> Unit = {}
+    onNavigateToAddAddress: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -107,24 +109,19 @@ fun SummaryScreen(
     var paymentPhoneNumber by remember { mutableStateOf("") }
 
     LaunchedEffect(viewModel) {
-        println("[SummaryScreen] collecting viewModel effects")
         viewModel.effect.collect { effect ->
-            println("[SummaryScreen] effect received=$effect")
             when (effect) {
                 SummaryEffect.NavigateBack -> onBack()
                 is SummaryEffect.NavigateToBookings -> {
-                    println("[SummaryScreen] NavigateToBookings message=${effect.message}")
                     onPay(effect.message)
                 }
                 is SummaryEffect.NavigateToPayment -> {
-                    println("[SummaryScreen] NavigateToPayment orderId=${effect.orderId} amount=${effect.amount} phone=${effect.phoneNumber}")
                     paymentOrderId = effect.orderId
                     paymentAmount = effect.amount
                     paymentPhoneNumber = effect.phoneNumber
                 }
 
                 is SummaryEffect.ShowMessage -> launch {
-                    println("[SummaryScreen] ShowMessage=${effect.message}")
                     snackbarHostState.showSnackbar(effect.message)
                 }
             }
@@ -132,19 +129,16 @@ fun SummaryScreen(
     }
 
     paymentOrderId?.let { orderId ->
-        println("[SummaryScreen] LaunchPaymentActivity orderId=$orderId amount=$paymentAmount phone=$paymentPhoneNumber")
         LaunchPaymentActivity(
             orderId = orderId,
             amount = paymentAmount,
             phoneNumber = paymentPhoneNumber,
             onResult = { success ->
-                println("[SummaryScreen] payment result orderId=$orderId success=$success")
                 paymentOrderId = null
                 if (success) {
                     viewModel.onEvent(SummaryEvent.PaymentSucceeded(orderId))
                 } else {
                     coroutineScope.launch {
-                        println("[SummaryScreen] payment failed snackbar")
                         snackbarHostState.showSnackbar("Payment failed")
                     }
                 }
@@ -405,17 +399,31 @@ fun SummaryScreen(
         if (showAddressSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showAddressSheet = false },
-                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false),
                 containerColor = Color.White
             ) {
-                AddAddressBottomSheetContent(
-                    currentAddress = addressValue,
-                    onSave = { newAddress ->
-                        viewModel.onEvent(SummaryEvent.UpdateAddress(newAddress))
+                AddressSelectionBottomSheetContent(
+                    addresses = state.savedAddresses,
+                    onSelect = { selectedAddress ->
+                        val fullAddressString = buildString {
+                            if (selectedAddress.houseNumber.isNotBlank()) append(selectedAddress.houseNumber)
+                            if (selectedAddress.street.isNotBlank()) {
+                                if (isNotBlank()) append(", ")
+                                append(selectedAddress.street)
+                            }
+                            if (selectedAddress.landmark.isNotBlank()) {
+                                if (isNotBlank()) append(", ")
+                                append(selectedAddress.landmark)
+                            }
+                        }
+                        viewModel.onEvent(SummaryEvent.UpdateAddress(fullAddressString))
                         showAddressSheet = false
                         if (state.timeSlotFormatted.isNullOrBlank()) {
                             showTimeSlotSheet = true
                         }
+                    },
+                    onAddNew = {
+                        onNavigateToAddAddress()
                     },
                     onDismiss = { showAddressSheet = false }
                 )
@@ -654,39 +662,84 @@ private fun EditPhoneBottomSheetContent(
 }
 
 @Composable
-private fun AddAddressBottomSheetContent(
-    currentAddress: String?,
-    onSave: (String) -> Unit,
+private fun AddressSelectionBottomSheetContent(
+    addresses: List<org.example.project.profile.domain.model.SavedAddress>,
+    onSelect: (org.example.project.profile.domain.model.SavedAddress) -> Unit,
+    onAddNew: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    var address by remember(currentAddress) { mutableStateOf(currentAddress.orEmpty()) }
-
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("Delivery address", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = address,
-            onValueChange = { address = it },
-            label = { Text("Address") },
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxHeight(0.9f)
+            .padding(16.dp)
+    ) {
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            minLines = 3,
-            colors = OutlinedTextFieldDefaults.colors()
-        )
-
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Select delivery address", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            TextButton(onClick = onDismiss) { Text("Close") }
+        }
+        
         Spacer(modifier = Modifier.height(16.dp))
+        
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(addresses) { address ->
+                val fullAddressString = buildString {
+                    if (address.houseNumber.isNotBlank()) append(address.houseNumber)
+                    if (address.street.isNotBlank()) {
+                        if (isNotBlank()) append(", ")
+                        append(address.street)
+                    }
+                    if (address.landmark.isNotBlank()) {
+                        if (isNotBlank()) append(", ")
+                        append(address.landmark)
+                    }
+                }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(
-                onClick = { onSave(address) },
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF))
-            ) {
-                Text("Save")
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSelect(address) },
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F7F7)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_location),
+                            contentDescription = "Address",
+                            tint = Color.Black,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(address.label.ifBlank { "Address" }, fontWeight = FontWeight.SemiBold, color = Color.Black)
+                            Text(fullAddressString, fontSize = 13.sp, color = Color.Gray)
+                        }
+                    }
+                }
             }
-
-            TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) {
-                Text("Cancel")
+            
+            item {
+                Button(
+                    onClick = onAddNew,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                        .height(52.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C4DFF)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Add new address", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
         }
     }

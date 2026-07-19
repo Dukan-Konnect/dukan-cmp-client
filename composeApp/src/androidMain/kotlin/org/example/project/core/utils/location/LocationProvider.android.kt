@@ -50,6 +50,10 @@ actual class LocationProvider(private val context: Context) {
         address
     }
 
+    actual suspend fun getAddressFromLocation(latitude: Double, longitude: Double): UserLocation? = withContext(Dispatchers.IO) {
+        reverseGeocode(latitude, longitude)
+    }
+
     private suspend fun reverseGeocode(latitude: Double, longitude: Double): UserLocation {
         if (geocoder == null) {
             Log.w("LocationProvider", "Geocoder not available")

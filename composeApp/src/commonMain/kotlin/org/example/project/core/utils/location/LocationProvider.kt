@@ -8,4 +8,5 @@ import org.example.project.home.domain.model.UserLocation
  */
 expect class LocationProvider {
     suspend fun getCurrentLocation(): UserLocation?
+    suspend fun getAddressFromLocation(latitude: Double, longitude: Double): UserLocation?
 }

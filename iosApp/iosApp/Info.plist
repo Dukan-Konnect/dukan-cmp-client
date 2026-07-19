@@ -13,5 +13,11 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>itms-apps</string>
+	</array>
 </dict>
 </plist>

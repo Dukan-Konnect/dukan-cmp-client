@@ -23,6 +23,10 @@ data class SavedAddressEntity(
     val landmark: String,
     @ColumnInfo(name = "phone")
     val phone: String,
+    @ColumnInfo(name = "latitude")
+    val latitude: Double = 0.0,
+    @ColumnInfo(name = "longitude")
+    val longitude: Double = 0.0,
     @ColumnInfo(name = "is_default")
     val isDefault: Boolean,
     @ColumnInfo(name = "created_at")

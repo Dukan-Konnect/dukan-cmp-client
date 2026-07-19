@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +41,7 @@ fun BookingsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    var hasConsumedSuccessMessage by rememberSaveable(successMessage) { mutableStateOf(false) }
 
     val tabs = listOf("Upcoming", "Completed", "Cancelled")
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -60,7 +62,8 @@ fun BookingsScreen(
     }
 
     LaunchedEffect(successMessage) {
-        if (!successMessage.isNullOrBlank()) {
+        if (!hasConsumedSuccessMessage && !successMessage.isNullOrBlank()) {
+            hasConsumedSuccessMessage = true
             snackbarHostState.showSnackbar(successMessage)
         }
     }

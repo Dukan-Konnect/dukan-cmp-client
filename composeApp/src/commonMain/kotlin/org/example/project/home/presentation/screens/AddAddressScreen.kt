@@ -1,14 +1,36 @@
 package org.example.project.home.presentation.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -16,64 +38,54 @@ import androidx.compose.ui.unit.sp
 import dukaankonnect.composeapp.generated.resources.Res
 import dukaankonnect.composeapp.generated.resources.ic_arrow_back
 import dukaankonnect.composeapp.generated.resources.ic_location
-import dukaankonnect.composeapp.generated.resources.ic_logout
-import dukaankonnect.composeapp.generated.resources.ic_phone
+import org.example.project.core.utils.location.MapView
+import org.example.project.home.presentation.viewmodels.AddAddressUiState
+import org.example.project.home.presentation.viewmodels.AddAddressViewModel
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun AddAddressScreen(
     onSaveAndProceed: () -> Unit = {},
     onClose: () -> Unit = {},
-    onChangeAddress: () -> Unit = {}
+    viewModel: AddAddressViewModel = koinViewModel()
 ) {
-    var houseNumber by remember { mutableStateOf("") }
-    var landmark by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsState()
 
+    AddAddressContent(
+        uiState = uiState,
+        onSaveAndProceed = { viewModel.saveAddress(onSaveAndProceed) },
+        onClose = onClose,
+        onFetchLocation = viewModel::fetchLocation,
+        onUpdateLocation = viewModel::updateLocation,
+        onHouseNumberChange = viewModel::updateHouseNumber,
+        onLandmarkChange = viewModel::updateLandmark
+    )
+}
+
+@Composable
+fun AddAddressContent(
+    uiState: AddAddressUiState,
+    onSaveAndProceed: () -> Unit,
+    onClose: () -> Unit,
+    onFetchLocation: () -> Unit,
+    onUpdateLocation: (Double, Double) -> Unit = { _, _ -> },
+    onHouseNumberChange: (String) -> Unit = {},
+    onLandmarkChange: (String) -> Unit = {}
+) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF7F7F7))
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header with Status Bar
+            // Header
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 color = Color.White,
                 shadowElevation = 2.dp
             ) {
                 Column {
-                    // Status Bar
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "9:30",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color.Black
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_location),
-                                contentDescription = "Signal",
-                                tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_phone),
-                                contentDescription = "Battery",
-                                tint = Color.Black,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-
-
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -90,30 +102,11 @@ fun AddAddressScreen(
                                 )
                             }
                             Text(
-                                text = "Summary",
+                                text = "Add address",
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 18.sp,
                                 color = Color.Black
                             )
-                        }
-                        IconButton(
-                            onClick = onClose,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.Black),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    painter = painterResource(Res.drawable.ic_logout),
-                                    contentDescription = "Close",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
                         }
                     }
                 }
@@ -125,6 +118,19 @@ fun AddAddressScreen(
                     .weight(1f)
                     .background(Color(0xFFE8EAF6))
             ) {
+                if (uiState.isLoading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFF6C4DFF))
+                    }
+                } else {
+                    MapView(
+                        modifier = Modifier.fillMaxSize(),
+                        latitude = uiState.latitude,
+                        longitude = uiState.longitude,
+                        onCameraPositionChanged = onUpdateLocation
+                    )
+                }
+
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -147,7 +153,6 @@ fun AddAddressScreen(
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
-
                             Icon(
                                 painter = painterResource(Res.drawable.ic_location),
                                 contentDescription = "Location",
@@ -174,28 +179,9 @@ fun AddAddressScreen(
                     )
                 }
 
-                // Google Maps Logo (bottom left)
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(16.dp)
-                ) {
-                    Surface(
-                        color = Color.White,
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
-                        Text(
-                            "Google",
-                            fontSize = 12.sp,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                    }
-                }
-
                 // Location Target Button (bottom right)
                 FloatingActionButton(
-                    onClick = { /* Re-center map */ },
+                    onClick = onFetchLocation,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(16.dp)
@@ -243,29 +229,17 @@ fun AddAddressScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "Kesnand Rd",
+                                uiState.streetAddress.ifBlank { "Current Location" },
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.Black
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                "Kesnand Rd, opp. to Ayurvedic collage, Wagholi, पुणे, महाराष्ट्र 4...",
+                                uiState.formattedAddress.ifBlank { "Fetching location..." },
                                 fontSize = 13.sp,
                                 color = Color.Gray,
                                 lineHeight = 18.sp
-                            )
-                        }
-                        TextButton(
-                            onClick = onChangeAddress,
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = Color(0xFF6C4DFF)
-                            )
-                        ) {
-                            Text(
-                                "Change",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
@@ -274,8 +248,8 @@ fun AddAddressScreen(
 
                     // House/Flat Number Input
                     OutlinedTextField(
-                        value = houseNumber,
-                        onValueChange = { houseNumber = it },
+                        value = uiState.houseNumber,
+                        onValueChange = onHouseNumberChange,
                         label = {
                             Text(
                                 "House/Flat Number",
@@ -297,8 +271,8 @@ fun AddAddressScreen(
 
                     // Landmark Input
                     OutlinedTextField(
-                        value = landmark,
-                        onValueChange = { landmark = it },
+                        value = uiState.landmark,
+                        onValueChange = onLandmarkChange,
                         label = {
                             Text(
                                 "Landmark (Optional)",
@@ -330,7 +304,7 @@ fun AddAddressScreen(
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            "Save and Proceed to slots",
+                            "Save",
                             fontWeight = FontWeight.SemiBold,
                             color = Color.White,
                             fontSize = 16.sp
@@ -342,9 +316,4 @@ fun AddAddressScreen(
             }
         }
     }
-}
-@Preview
-@Composable
-fun AddAddressScreenPreview() {
-    AddAddressScreen()
 }

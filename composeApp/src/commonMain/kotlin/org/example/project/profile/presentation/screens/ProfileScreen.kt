@@ -216,7 +216,11 @@ fun ProfileScreen(
             ProfileMenuItem(
                 icon = Res.drawable.ic_info,
                 title = "About DukanKonnect",
-                onClick = { /* TODO */ }
+                onClick = {
+                    scope.launch {
+                        snackbarHostState.showSnackbar(message = "Thank you for using Dukan Konnect")
+                    }
+                }
             )
 
             HorizontalDivider(

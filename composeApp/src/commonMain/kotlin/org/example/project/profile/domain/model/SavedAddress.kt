@@ -12,5 +12,7 @@ data class SavedAddress(
     val state: String,
     val landmark: String,
     val phone: String,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val isDefault: Boolean = false
 )

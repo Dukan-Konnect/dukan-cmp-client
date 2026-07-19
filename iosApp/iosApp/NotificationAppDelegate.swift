@@ -18,16 +18,16 @@ final class NotificationAppDelegate: NSObject, UIApplicationDelegate, UNUserNoti
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        #if canImport(FirebaseCore)
+        FirebaseApp.configure()
+        #endif
+
         print("[AppDelegate] didFinishLaunchingWithOptions")
         KoinInitializerKt.initializeKoin(additionalModules: [PlatformModuleKt.platformModule])
         UNUserNotificationCenter.current().delegate = self
-
-        #if canImport(FirebaseCore)
-        if FirebaseApp.app() == nil {
-            print("[AppDelegate] configuring Firebase")
-            FirebaseApp.configure()
+        NotificationCenter.default.addObserver(forName: NSNotification.Name("RequestPushRegistration"), object: nil, queue: .main) { _ in
+            application.registerForRemoteNotifications()
         }
-        #endif
 
         #if canImport(FirebaseMessaging)
         print("[AppDelegate] setting Firebase Messaging delegate")
@@ -98,7 +98,9 @@ private extension NotificationAppDelegate {
             print("[AppDelegate] notification authorizationStatus=\(status.rawValue) isAuthorized=\(isAuthorized)")
             if isAuthorized {
                 print("[AppDelegate] calling registerForRemoteNotifications")
-                application.registerForRemoteNotifications()
+                DispatchQueue.main.async {
+                    application.registerForRemoteNotifications()
+                }
             }
         }
     }

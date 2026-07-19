@@ -13,6 +13,8 @@ fun SavedAddressEntity.toDomain(): SavedAddress = SavedAddress(
     state = state,
     landmark = landmark,
     phone = phone,
+    latitude = latitude,
+    longitude = longitude,
     isDefault = isDefault
 )
 
@@ -28,6 +30,8 @@ fun SavedAddress.toEntity(
     state = state,
     landmark = landmark,
     phone = phone,
+    latitude = latitude ?: 0.0,
+    longitude = longitude ?: 0.0,
     isDefault = isDefault,
     createdAt = createdAt,
     updatedAt = updatedAt

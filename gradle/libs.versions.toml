@@ -3,7 +3,7 @@ agp = "9.1.0"
 
 android-compileSdk = "36"
 
-android-minSdk = "24"
+android-minSdk = "25"
 
 android-targetSdk = "36"
 
@@ -56,6 +56,8 @@ kotlinx-serialization = "1.10.0"
 postgrestKt = "3.5.0"
 
 okhttp3 = "5.3.2"
+
+ramaniMaplibre = "0.9.0"
 
 room = "2.8.4"
 
@@ -124,6 +126,7 @@ compottie-resources = { module = "io.github.alexzhirkevich:compottie-resources",
 multiplatform-settings = { group = "com.russhwolf", name = "multiplatform-settings-no-arg", version.ref = "multiplatformSettings" }
 multiplatform-settings-coroutines = { group = "com.russhwolf", name = "multiplatform-settings-coroutines", version.ref = "multiplatformSettings" }
 multiplatform-settings-serialization = { group = "com.russhwolf", name = "multiplatform-settings-serialization", version.ref = "multiplatformSettings" }
+ramani-maplibre = { module = "org.ramani-maps:ramani-maplibre", version.ref = "ramaniMaplibre" }
 
 # Optional SQLite Wrapper available in version 2.8.0 and higher
 androidx-room-sqlite-wrapper = { module = "androidx.room:room-sqlite-wrapper", version.ref = "room" }

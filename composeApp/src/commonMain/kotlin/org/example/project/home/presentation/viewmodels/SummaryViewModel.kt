@@ -19,6 +19,8 @@ import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.utils.DataState
 import org.example.project.core.model.booking.CreateBookingRequest
 import org.example.project.booking.domain.repository.BookingRemoteRepository
+import org.example.project.profile.domain.repository.AddressRepository
+import org.example.project.profile.domain.model.SavedAddress
 import org.example.project.home.domain.usecase.CreatePaymentOrderUseCase
 import org.example.project.home.presentation.navigation.SummaryRoute
 import org.example.project.core.utils.SnackbarMessage
@@ -36,7 +38,8 @@ data class SummaryUiState(
     val timeSlotIso: String? = null,
     val timeSlotFormatted: String? = null,
     val isLoading: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val savedAddresses: List<SavedAddress> = emptyList()
 ) {
     val itemTotalCents: Long
         get() = (booking?.providerFee?.toLong() ?: 0L) * 100L
@@ -75,7 +78,8 @@ class SummaryViewModel(
     savedStateHandle: SavedStateHandle,
     private val createPaymentOrder: CreatePaymentOrderUseCase,
     private val bookingRemoteRepository: BookingRemoteRepository,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val addressRepository: AddressRepository
 ) : ViewModel() {
 
     private val bookingRoute = savedStateHandle.toRoute<SummaryRoute>()
@@ -92,6 +96,15 @@ class SummaryViewModel(
 
     init {
         prefillFromUserProfile()
+        observeAddresses()
+    }
+
+    private fun observeAddresses() {
+        viewModelScope.launch {
+            addressRepository.observeAddresses().collect { addresses ->
+                _state.update { it.copy(savedAddresses = addresses) }
+            }
+        }
     }
 
     fun onEvent(event: SummaryEvent) {

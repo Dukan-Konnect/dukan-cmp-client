@@ -21,7 +21,7 @@ import org.example.project.home.presentation.screens.HomeScreen
 import org.example.project.home.presentation.screens.ServiceDetailScreen
 import org.example.project.home.presentation.screens.SummaryScreen
 import org.example.project.onboarding.presentation.navigation.LocationFetchRoute
-import org.example.project.profile.presentation.screens.EditAddressScreen
+import org.example.project.home.presentation.screens.AddAddressScreen
 import org.example.project.profile.presentation.screens.EditProfileScreen
 import org.example.project.profile.presentation.screens.ManageAddressScreen
 import org.example.project.profile.presentation.screens.ProfileScreen
@@ -133,8 +133,9 @@ fun NavGraphBuilder.editProfileDestination(navController: NavController) {
 
 fun NavGraphBuilder.editAddressDestination(navController: NavController) {
     composable<EditAddressRoute> {
-        EditAddressScreen(
-            onBack = navController::navigateUp
+        AddAddressScreen(
+            onClose = navController::navigateUp,
+            onSaveAndProceed = navController::navigateUp
         )
     }
 }
@@ -160,7 +161,8 @@ fun NavGraphBuilder.summaryDestination(navController: NavController) {
                         inclusive = false
                     }
                 }
-            }
+            },
+            onNavigateToAddAddress = { navController.navigateToEditAddressScreen() }
         )
     }
 }

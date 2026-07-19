@@ -78,6 +78,29 @@ actual class LocationProvider {
             }
         }
 
+    @OptIn(ExperimentalForeignApi::class)
+    actual suspend fun getAddressFromLocation(latitude: Double, longitude: Double): UserLocation? =
+        suspendCancellableCoroutine { continuation ->
+            val location = CLLocation(latitude = latitude, longitude = longitude)
+            val geocoder = CLGeocoder()
+            geocoder.reverseGeocodeLocation(location) { placemarks, error ->
+                if (continuation.isActive) {
+                    if (error != null || placemarks == null || placemarks.isEmpty()) {
+                        continuation.resume(
+                            UserLocation(
+                                address = "$latitude, $longitude",
+                                latitude = latitude,
+                                longitude = longitude
+                            )
+                        )
+                    } else {
+                        val placemark = placemarks.first() as CLPlacemark
+                        continuation.resume(parsePlacemark(placemark, latitude, longitude))
+                    }
+                }
+            }
+        }
+
     private fun parsePlacemark(placemark: CLPlacemark, lat: Double, lng: Double): UserLocation {
         val flatNumber = placemark.subThoroughfare ?: placemark.name
         val streetAddress = placemark.thoroughfare
