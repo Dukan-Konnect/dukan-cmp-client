@@ -19,12 +19,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dukaankonnect.composeapp.generated.resources.Res
 import dukaankonnect.composeapp.generated.resources.ic_arrow_back
-import dukaankonnect.composeapp.generated.resources.ic_edit
 import dukaankonnect.composeapp.generated.resources.ic_person_large
 import org.example.project.profile.presentation.viewmodels.ProfileEffect
 import org.example.project.profile.presentation.viewmodels.ProfileViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +34,7 @@ fun EditProfileScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
     val originalName = state.name.orEmpty()
     val originalEmail = state.email.orEmpty()
@@ -84,6 +85,7 @@ fun EditProfileScreen(
                         )
                     }
                 },
+                windowInsets = WindowInsets(0.dp),
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color.White
                 )
@@ -132,24 +134,6 @@ fun EditProfileScreen(
                             contentDescription = "Profile",
                             modifier = Modifier.size(50.dp),
                             tint = Color(0xFF6C4DFF)
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .align(Alignment.BottomEnd)
-                            .clip(CircleShape)
-                            .background(Color(0xFF6C4DFF))
-                            .clickable { /* TODO: Add photo picker */ }
-                            .border(3.dp, Color.White, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_edit),
-                            contentDescription = "Change Photo",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
@@ -222,18 +206,13 @@ fun EditProfileScreen(
                 )
                 OutlinedTextField(
                     value = if (mobileNumber.startsWith("+91")) mobileNumber else "+91 $mobileNumber",
-                    onValueChange = {
-                        val cleaned = it.removePrefix("+91").trim()
-                        mobileNumber = cleaned
-                    },
+                    onValueChange = { },
+                    enabled = false,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF6C4DFF),
-                        unfocusedBorderColor = Color(0xFFE0E0E0),
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black,
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
+                        disabledBorderColor = Color(0xFFE0E0E0),
+                        disabledTextColor = Color.Gray,
+                        disabledContainerColor = Color(0xFFF5F5F5)
                     ),
                     shape = RoundedCornerShape(8.dp),
                     textStyle = LocalTextStyle.current.copy(
@@ -246,7 +225,14 @@ fun EditProfileScreen(
 
                 Button(
                     onClick = {
-                        viewModel.updateProfile(fullName, mobileNumber, email)
+                        val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\$".toRegex()
+                        if (email.isNotBlank() && !email.matches(emailRegex)) {
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Invalid email")
+                            }
+                        } else {
+                            viewModel.updateProfile(fullName, mobileNumber, email)
+                        }
                     },
                     enabled = canSaveChanges,
                     colors = ButtonDefaults.buttonColors(
@@ -260,7 +246,7 @@ fun EditProfileScreen(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        "Save changes",
+                        if (state.isLoading) "Saving..." else "Save changes",
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White,
                         fontSize = 16.sp

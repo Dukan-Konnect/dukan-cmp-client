@@ -12,15 +12,44 @@ class HomeRepositoryImpl(
     private val apiCallHelper: ApiCallHelper
 ) : HomeRepository {
 
-    override suspend fun getPersonalServices(): DataState<List<Service>> = apiCallHelper.execute {
-        homeService.getServicesByCategory("PERSONAL").toDomain()
+    private var personalCache: List<Service>? = null
+    private var homeCache: List<Service>? = null
+    private var trendingCache: List<Service>? = null
+
+    override val hasCache: Boolean
+        get() = personalCache != null && homeCache != null && trendingCache != null
+
+    override fun getCachedPersonalServices(): List<Service> = personalCache ?: emptyList()
+    override fun getCachedHomeServices(): List<Service> = homeCache ?: emptyList()
+    override fun getCachedTrendingServices(): List<Service> = trendingCache ?: emptyList()
+
+    override suspend fun getPersonalServices(): DataState<List<Service>> {
+        val result = apiCallHelper.execute {
+            homeService.getServicesByCategory("PERSONAL").toDomain()
+        }
+        if (result is DataState.Success) {
+            personalCache = result.data
+        }
+        return result
     }
 
-    override suspend fun getHomeServices(): DataState<List<Service>> = apiCallHelper.execute {
-        homeService.getServicesByCategory("HOME").toDomain()
+    override suspend fun getHomeServices(): DataState<List<Service>> {
+        val result = apiCallHelper.execute {
+            homeService.getServicesByCategory("HOME").toDomain()
+        }
+        if (result is DataState.Success) {
+            homeCache = result.data
+        }
+        return result
     }
 
-    override suspend fun getTrendingServices(): DataState<List<Service>> = apiCallHelper.execute {
-        homeService.getServicesByCategory("TRENDING").toDomain()
+    override suspend fun getTrendingServices(): DataState<List<Service>> {
+        val result = apiCallHelper.execute {
+            homeService.getServicesByCategory("TRENDING").toDomain()
+        }
+        if (result is DataState.Success) {
+            trendingCache = result.data
+        }
+        return result
     }
 }

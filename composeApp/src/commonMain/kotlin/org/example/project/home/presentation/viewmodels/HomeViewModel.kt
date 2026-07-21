@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
 import org.example.project.home.domain.repository.HomeRepository
 import org.example.project.core.datastore.UserPreferencesRepository
 import org.example.project.core.model.home.Banner
@@ -112,25 +113,43 @@ class HomeViewModel(
 
     private fun loadAllData() {
         viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    dialogState = HomeUiState.DialogState.Loading,
-                    isSearchEnabled = false
-                )
+            val hasCache = homeRepository.hasCache
+            if (!hasCache) {
+                _uiState.update {
+                    it.copy(
+                        dialogState = HomeUiState.DialogState.Loading,
+                        isSearchEnabled = false
+                    )
+                }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        personalService = homeRepository.getCachedPersonalServices(),
+                        homeService = homeRepository.getCachedHomeServices(),
+                        trendingService = homeRepository.getCachedTrendingServices(),
+                        isSearchEnabled = true
+                    )
+                }
             }
 
-            val personalResult = homeRepository.getPersonalServices()
-            val homeResult = homeRepository.getHomeServices()
-            val trendingResult = homeRepository.getTrendingServices()
+            val personalDeferred = async { homeRepository.getPersonalServices() }
+            val homeDeferred = async { homeRepository.getHomeServices() }
+            val trendingDeferred = async { homeRepository.getTrendingServices() }
+
+            val personalResult = personalDeferred.await()
+            val homeResult = homeDeferred.await()
+            val trendingResult = trendingDeferred.await()
 
             if (personalResult is DataState.Error || homeResult is DataState.Error || trendingResult is DataState.Error) {
-                val errorMsg = (personalResult as? DataState.Error)?.exception?.message
-                    ?: (homeResult as? DataState.Error)?.exception?.message
-                    ?: (trendingResult as? DataState.Error)?.exception?.message
-                    ?: "An unexpected error occurred"
+                if (!hasCache) {
+                    val errorMsg = (personalResult as? DataState.Error)?.exception?.message
+                        ?: (homeResult as? DataState.Error)?.exception?.message
+                        ?: (trendingResult as? DataState.Error)?.exception?.message
+                        ?: "An unexpected error occurred"
 
-                _uiState.update {
-                    it.copy(dialogState = HomeUiState.DialogState.Error(errorMsg))
+                    _uiState.update {
+                        it.copy(dialogState = HomeUiState.DialogState.Error(errorMsg))
+                    }
                 }
                 return@launch
             }
